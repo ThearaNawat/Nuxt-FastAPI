@@ -14,21 +14,12 @@
 
         <template #end>
             <div class="md:flex items-center w-1/3">
-              <IconField >
-                  <InputIcon class="pi pi-search" />
-                  <InputText placeholder="Search" />
-              </IconField>
+              
               <div class="flex items-center ml-3">
-                <!-- <i class="pi pi-globe" @click="toggler" style="font-size: 1.4rem;color: green; cursor: pointer;" /> -->
                 <Button size="large" icon="pi pi-globe" @click="toggler" variant="link"></Button>
-                <!-- <OverlayBadge value="1" size="small">
-                  <i class="pi pi-bell" style="font-size: 1.4rem;color: green; cursor: pointer;" />
-                   <Button size="large" icon="pi pi-bell" variant="link"></Button>
-                </OverlayBadge> -->
-                  <!-- <i :class="theme !== 'dark' ? 'pi pi-sun' : 'pi pi-moon'" style="font-size: 1.4rem;color: green; cursor: pointer;" @click="toggle"/> -->
+                
                   <Button size="large" @click="toggle" :icon="theme !== 'dark' ? 'pi pi-sun' : 'pi pi-moon'" variant="link"></Button>
                   <ComponentColorPicker />
-                  <!-- <i class="pi pi-cog pi-spin" style="font-size: 1.4rem;color: green; cursor: pointer;" /> -->
                   <Button size="large" icon="pi pi-cog pi-spin" variant="link"></Button>
               </div>
             </div>

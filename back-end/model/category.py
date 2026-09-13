@@ -1,10 +1,19 @@
-from sqlmodel import SQLModel, Field, Relationship
-from typing import Optional, List
+from __future__ import annotations
 
-class Category(SQLModel, table=True):
-    __tablename__ = 'Category'
-    
-    id: int = Field(primary_key=True, default=None)
-    code: str = Field(index=True)
-    name: str = Field(index=True)
-    description: str | None = Field(index=True, default=None)
+from typing import Optional
+
+from sqlalchemy import String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from model.base_model import BaseModel
+
+
+class Category(BaseModel):
+    __tablename__ = "CATEGORY"
+
+    code: Mapped[str] = mapped_column(String(100), index=True, nullable=False)
+    name: Mapped[str] = mapped_column(String(100), index=True, nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(
+        String(255), index=True, nullable=True
+    )
+    products: Mapped[list[Product]] = relationship(back_populates="category")

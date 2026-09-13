@@ -2,6 +2,9 @@ import Aura from '@primeuix/themes/aura';
 export default defineNuxtConfig({
   devtools: { enabled: true },
   ssr: false,
+  imports: {
+    autoImport: true
+  },
   modules: [
     '@nuxt/content',
     '@nuxt/eslint',

@@ -11,7 +11,6 @@
             :lazy="loading"
             size="small"
             striped-rows
-            show-gridlines
             v-model:selection="selectSupplier"
             v-model:filters="filters"
             :global-filter-fields="['name', 'description', 'code', 'email', 'phone', 'address']"
@@ -20,10 +19,8 @@
             row-hover
             @row-dblclick="onOpenDialogEdit"
             scrollable
-            scroll-height="600px"
-            :virtual-scroller-options="{ itemSize: 46 }"
-            paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
-            currentPageReportTemplate="{first} to {last} of {totalRecords}"
+            scroll-height="500px"
+            style="max-width: 1310px;"
         >
             <Toolbar>
                 <template #end>
@@ -207,34 +204,44 @@
     </div>
 </template>
 <script setup lang="ts">
-    definePageMeta({ middleware: 'auth', layout: 'dashboard'})
+    definePageMeta({ 
+        // middleware: 'auth', 
+        layout: 'dashboard'})
     import type { supplier } from '~/composables/useSupplier'
-    import { FilterMatchMode, FilterOperator} from '@primevue/core/api'
+    import {
+        applySupplierValidationErrors,
+        createEmptySupplierForm,
+        createSupplierErrors,
+        createSupplierFilters,
+        type SupplierErrors,
+        type SupplierForm
+    } from '~/services/supplier.service'
+    import { useAuthStore } from '~~/store/state'
     const { confirmDelete } = useConfirmDelete()
     const { t } = useI18n()
     const supplierAction = useSuppliers()
+    const authStore = useAuthStore()
+    const { hasPermission } = useFunction()
+    const route = useRoute()
     const messageBox = MessageBox()
     const selectSupplier = ref([])
     const supplierList = ref<supplier[]>([])
+
     const loading = ref(false)
     const btnLoading = ref(false)
     const editMode = ref(false)
     const openDialog = ref(false)
     const filters = ref()
-    const errors = ref({code: '', name: '', email: '', phone: ''})
-    const supplierForm = ref<supplier>({
-        id: 0, name: '', code: '', description: '', phone: '', email: '', address: ''
-    })
+    const errors = ref<SupplierErrors>(createSupplierErrors())
+    const supplierForm = ref<SupplierForm>(createEmptySupplierForm())
+
+    const canCreate = computed(() => hasPermission(route.path, 'create'))
+    const canUpdate = computed(() => hasPermission(route.path, 'update'))
+    const canDelete = computed(() => hasPermission(route.path, 'delete'))
+    const canView = computed(() => hasPermission(route.path, 'view'))
+
     const initFilters = () => {
-        filters.value = {
-            global: { value: null, matchMode: FilterMatchMode.CONTAINS },
-            name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },            
-            code: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-            description: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }]},
-            email: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },            
-            phone: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-            address: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }]}
-        };
+        filters.value = createSupplierFilters()
     }
     initFilters()
     const clearFilter = () => {
@@ -246,11 +253,10 @@
         openDialog.value = false
         loading.value = false
         btnLoading.value = false
-        errors.value = {name: '', code: '', email: '', phone: ''}
-        supplierForm.value = { id: 0, name: '', code: '', description: '', phone: '', email: '', address: ''}
+        errors.value = createSupplierErrors()
+        supplierForm.value = createEmptySupplierForm()
     }
     const onOpenDialogEdit = (item: any) => {
-        console.log(item)
         editMode.value = true
         supplierForm.value.id = item.data.id
         supplierForm.value.name = item.data.name
@@ -261,7 +267,7 @@
         supplierForm.value.description = item.data.description
         openDialog.value = true
     }
-    const successMessage = () => messageBox.success('Your data was saved successfully.')
+    const successMessage = () => messageBox.success(t('successMessage'))
     const getAllSupplier = async () => {
         loading.value = true
         supplierList.value = await supplierAction.getAllSupplier()
@@ -278,24 +284,9 @@
             close()
         })
         .catch((error: any) => {
-            let respondedData = error?.data?.data.detail
-            if(typeof respondedData != 'string' && respondedData.length > 0){
-                for(var i = 0; i < respondedData.length; i++){
-                    let fieldName = respondedData[i].loc[1]
-
-                    if(fieldName === 'name') errors.value.name = respondedData[i].msg
-                    
-                    if(fieldName === 'code') errors.value.code = respondedData[i].msg
-
-                    if(fieldName === 'email') errors.value.email = respondedData[i].msg
-
-                    if(fieldName === 'phone') errors.value.phone = respondedData[i].msg
-
-                }
-            }
+            errors.value = applySupplierValidationErrors(error?.data?.data?.detail, errors.value)
             loading.value = false
             btnLoading.value = false
-            //messageBox.error('An issue have occurred please inform technicial support.')
         })
     }
     const update = async () => {
@@ -310,36 +301,24 @@
             successMessage()
         })
         .catch((error: any) =>{
-            let respondedData = error?.data?.data.detail
-            if(typeof respondedData != 'string' && respondedData.length > 0){
-                for(var i = 0; i < respondedData.length; i++){
-                    let fieldName = respondedData[i].loc[1]
-                    if(fieldName === 'name') errors.value.name = respondedData[i].msg
-                    
-                    if(fieldName === 'code') errors.value.code = respondedData[i].msg
-                    
-                    if(fieldName === 'email') errors.value.email = respondedData[i].msg
-
-                    if(fieldName === 'phone') errors.value.phone = respondedData[i].msg
-                }
-            }
+            errors.value = applySupplierValidationErrors(error?.data?.data?.detail, errors.value)
             loading.value = false
             btnLoading.value = false
         })
-        const remove = async () =>{
-            btnLoading.value = true
-            loading.value = true
-            await supplierAction.remove(selectSupplier.value)
-            .then((res) => {
-                getAllSupplier()
-                loading.value = false
-                btnLoading.value = false
-                successMessage()
-            })
-            .catch((error: any) => {
-                messageBox.error('An issue have occurred please inform technicial support.')
-            })
-        } 
+    }
+    const remove = async () =>{
+        btnLoading.value = true
+        loading.value = true
+        await supplierAction.remove(selectSupplier.value)
+        .then((res) => {
+            getAllSupplier()
+            loading.value = false
+            btnLoading.value = false
+            successMessage()
+        })
+        .catch((error: any) => {
+            messageBox.error(t('errorMessage'))
+        })
     }
     const deleteMany = () =>{
         if(!selectSupplier.value.length) return
@@ -355,10 +334,13 @@
                 })
                 .catch((error: any) => {
                     loading.value = false
-                    messageBox.error('An issue have occurred please inform technicial support.')
+                    messageBox.error(t('errorMessage'))
                 })
             }
         )
     }
-    onMounted(getAllSupplier)
+
+    onMounted(() => {
+        getAllSupplier()
+    })
 </script>

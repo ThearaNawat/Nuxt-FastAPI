@@ -5,10 +5,11 @@ type PrimaryName = 'green' | 'blue' | 'indigo' | 'emerald' | 'orange' | 'red' |'
 
 const op = ref<InstanceType<typeof Popover> | null>(null)
 
-const primary = useState<PrimaryName>('ui_primary', () => 'indigo')
+// const primary = useState<PrimaryName>('ui_primary', () => 'indigo' as PrimaryName)
+const primary = ref<PrimaryName>('indigo' as PrimaryName)
 
 const COLORS: Record<PrimaryName, { c600: string; c700: string; c500: string }> = {
-    green:   { c500: '#22c55e', c600: '#16a34a', c700: '#15803d' },//'#11ba82' 
+    green:   { c500: '#22c55e', c600: '#16a34a', c700: '#15803d' },
     blue:    { c500: '#3b82f6', c600: '#2563eb', c700: '#1d4ed8' },
     indigo:  { c500: '#6366f1', c600: '#4f46e5', c700: '#4338ca' },
     emerald: { c500: '#10b981', c600: '#059669', c700: '#047857' },
@@ -22,29 +23,30 @@ function open(e: Event) {
   op.value?.toggle(e)
 }
 
-function applyColor(name: PrimaryName) {
-  primary.value = name
-  if (import.meta.client) localStorage.setItem('ui_primary', name)
+function applyColor(name: PrimaryName, saveToStorage = true) {
+    primary.value = name
+    if (import.meta.client && saveToStorage) localStorage.setItem('ui_primary', name)
 
-  const p = COLORS[name]
-  const root = document.documentElement.style
-  root.setProperty('--p-primary-500', p.c500)
-  root.setProperty('--p-primary-600', p.c600)
-  root.setProperty('--p-primary-700', p.c700)
-  root.setProperty('--p-primary-color', p.c600)
-  root.setProperty('--p-primary-contrast-color', '#ffffff')
+    if(import.meta.client){
+      const p = COLORS[name]
+      const root = document.documentElement.style
+      root.setProperty('--p-primary-500', p.c500)
+      root.setProperty('--p-primary-600', p.c600)
+      root.setProperty('--p-primary-700', p.c700)
+      root.setProperty('--p-primary-color', p.c600)
+      root.setProperty('--p-primary-contrast-color', '#ffffff')
+    }
 
-  op.value?.hide()
+    op.value?.hide()
 }
 
 onMounted(() => {
   const saved = (localStorage.getItem('ui_primary') as PrimaryName | null)
-  if (saved && COLORS[saved]) applyColor(saved)
+  if (saved && COLORS[saved]) applyColor(saved, false)
 })
 </script>
 
 <template>
-  <!-- <i class="pi pi-palette" @click="open" style="font-size: 1.4rem;color: green; cursor: pointer;"></i> -->
   <Button size="large" icon="pi pi-palette" @click="open" variant="link"></Button>
   <Popover ref="op" :dismissable="true" class="w-[220px]">
     <div class="p-2">
@@ -52,20 +54,22 @@ onMounted(() => {
         Primary color
       </div>
 
-      <div class="flex flex-wrap gap-2">
-        <button
-          v-for="(v, k) in COLORS"
-          :key="k"
-          class="w-6 h-6 rounded-full ring-1 ring-surface-200 dark:ring-surface-700"
-          :style="{ backgroundColor: v.c600 }"
-          @click="applyColor(k as PrimaryName)"
-        >
-          <span
-            v-if="primary === k"
-            class="block w-full h-full rounded-full ring-2 ring-white/90"
-          />
-        </button>
-      </div>
+      <ClientOnly>
+        <div class="flex flex-wrap gap-2">
+          <button
+            v-for="(v, k) in COLORS"
+            :key="k"
+            class="w-6 h-6 rounded-full ring-1 ring-surface-200 dark:ring-surface-700"
+            :style="{ backgroundColor: v.c600 }"
+            @click="applyColor(k as PrimaryName)"
+          >
+            <span
+              v-if="primary === k"
+              class="block w-full h-full rounded-full ring-2 ring-white/90"
+            />
+          </button>
+        </div>
+      </ClientOnly>
     </div>
   </Popover>
 </template>

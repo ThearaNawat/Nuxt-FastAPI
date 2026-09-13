@@ -1,9 +1,18 @@
+version: '3.8'
+
 services:
-  n8n:
-    image: n8nio/n8n
+  redis:
+    image: redis:7-alpine
+    container_name: erp_redis
     ports:
-      - "5678:5678"
-    environment:
-      - N8N_HOST=n8n.kgaics.com
-      - N8N_PROTOCOL=https
-      - N8N_PORT=5678
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - erp_network
+volumes:
+  redis_data:
+
+networks:
+  erp_network:
+    driver: bridge

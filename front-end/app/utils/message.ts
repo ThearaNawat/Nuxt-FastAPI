@@ -1,20 +1,21 @@
-export const Success = (detail: string) => ({
+
+export const Success = (detail: string, t: any) => ({
   severity: 'success',
-  summary: 'Success',
+  summary: t('success'),
   detail,
   life: 2500
 })
 
-export const ErrorBox = (detail: string) => ({
+export const ErrorBox = (detail: string, t: any) => ({
   severity: 'error',
-  summary: 'Error',
+  summary: t('error'),
   detail,
   life: 3500
 })
 
-export const Warn = (detail: string) => ({
+export const Warn = (detail: string, t: any) => ({
   severity: 'warn',
-  summary: 'Warning',
+  summary: t('warning'),
   detail,
   life: 3000
 })

@@ -1,46 +1,63 @@
-from sqlmodel import select, Session
-from fastapi import HTTPException, Response
+from sqlalchemy import select
+from sqlalchemy.orm import Session, joinedload
+from fastapi import HTTPException, Response, Request
 from model import User
 from sqlalchemy.exc import IntegrityError
-from schema.user import user_create, user_login
+from schema.user import user_create, user_login, user_update
 from passlib.context import CryptContext
 import time
 from datetime import datetime, timedelta, timezone
-from config import settings
+from core.config import settings
 from jose import jwt
-
+from service.menu_item_service import MenuItemService 
 password_context = CryptContext(schemes=['bcrypt'], deprecated="auto")
 SECRET_KEY = settings.SECRET_KEY
 ALGORITHM = settings.ALGORITHM
 
+
 def get_all(session: Session):
-    return session.exec(select(User).order_by(User.id)).all()
+    return session.execute(select(User).options(joinedload(User.role)).order_by(User.created_at)).scalars().all()
 
 def get_one(id: int,session: Session):
     user = session.get(User, id)
+    
     if not user:
         raise HTTPException(status_code=404, detail="User not found!")
     
     return user
 
-def create(data: user_create, session: Session):
+def _current_user_id(session: Session, current_user_id: int | None = None) -> int | None:
+    if current_user_id is not None:
+        return current_user_id
+    return session.info.get("current_user_id")
+
+
+def create(data: user_create, session: Session, current_user_id: int | None = None):
     try:
-        exist_user = session.exec(select(User).where(User.email == data.email)).first()
+        exist_user = session.execute(select(User).where(User.email == data.email)).scalars().first()
         if exist_user: 
-            raise HTTPException(400, "Username or email already exists")
+            raise HTTPException(status_code=400, detail="Username or email already exists")
         
         user = User(
             username = data.username,
             email = data.email,
             password = hash_password(data.password),
-            status= data.status
+            status= data.status,
+            role_id = data.role_id
         )
+        audit_user_id = _current_user_id(session, current_user_id)
+        if audit_user_id is not None:
+            user.created_by = audit_user_id
+            user.updated_by = audit_user_id
         
         session.add(user)
         session.commit()
         session.refresh(user)
         
         return { 'message': 'Success', 'data': user }
+    except HTTPException:
+        session.rollback()
+        raise
     except IntegrityError as e:
         session.rollback()
        
@@ -50,8 +67,8 @@ def create(data: user_create, session: Session):
         session.rollback()
        
         raise HTTPException(status_code=500, detail=f"Unexpected error: {repr(e)}")
-
-def update(id: int, data: user_create, session: Session):
+    
+def update(id: int, data: user_update, session: Session, current_user_id: int | None = None):
     try:
         user = session.get(User, id)
         if not user:
@@ -59,14 +76,27 @@ def update(id: int, data: user_create, session: Session):
         
         user.username = data.username
         user.email = data.email
-        user.password = data.password
+        
         user.status = data.status
+        user.role_id = data.role_id
+
+        if data.password:
+            user.password = hash_password(data.password)
+
+        audit_user_id = _current_user_id(session, current_user_id)
+        if audit_user_id is not None:
+            user.updated_by = audit_user_id
+        
         session.add(user)
         session.commit()
         session.refresh(user)
         return { "message": "Success", "data": user }
-    except Exception:
-        HTTPException(status_code=500, detail=Exception)    
+    except HTTPException:
+        session.rollback()
+        raise
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
 
 def delete(id: int, session: Session):
     try:
@@ -77,29 +107,42 @@ def delete(id: int, session: Session):
         session.delete(user)
         session.commit()
         return { "message": "Success", "data": user }
-    except Exception:
-        raise HTTPException(status_code=500, detail=Exception)
+    except HTTPException:
+        session.rollback()
+        raise
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
     
 def delete_many(ids: list[int], session: Session):
     
     try:
-        users = session.exec(select(User).where(User.id.in_(ids))).all()
+        users = session.execute(select(User).where(User.id.in_(ids))).scalars().all()
         
         if not users:
             raise HTTPException(status_code=404, detail="User not found!")
         
         for user in users:
             session.delete(user)
-            
+        
         session.commit()
         return {"message": "Success"}
+    except HTTPException:
+        session.rollback()
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=e)
+        session.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
     
-def login(data: user_login, response: Response, session: Session):
+async def login(data: user_login,request: Request ,response: Response, session: Session):
+
     try:
-        
-        user = session.exec(select(User).where(User.email == data.email and User.status == True)).first()
+        user = session.execute(
+            select(User).where(
+                User.email == data.email,
+                User.status.is_(True),
+            )
+        ).scalars().first()
         
         if not user:
             raise HTTPException(status_code=401, detail="Invalid email or password")
@@ -108,8 +151,25 @@ def login(data: user_login, response: Response, session: Session):
         
         if not verify_pass:
             raise HTTPException(status_code=401, detail="Invalid email or password")
+        
+
         expire_time = datetime.now(timezone.utc) + timedelta(days=1)
         token = create_token(sub= data.email)
+        
+        menu_id = []
+        if user.role.status:
+            menu_id = list(user.get_menu_ids())
+
+        menu_payload = []
+        menu_all_payload = []
+        try:
+            menu_payload = await MenuItemService(session).get_menu_by_id(menu_id)
+            menu_all_payload = await MenuItemService(session).get_all_menu_by_id(menu_id)
+        except Exception:
+            menu_payload = []
+            menu_all_payload = []
+
+
         response.set_cookie(
             key="TOKEN", 
             value=token, 
@@ -121,10 +181,15 @@ def login(data: user_login, response: Response, session: Session):
             path="/"
         )
         
-        return {"message": "Success", "user": user, "token": token}
-    except Exception:
+        payload = {"message": "Success", "user": user.to_dict(), "token": token, "menu": menu_payload, "menu_all": menu_all_payload }
+
+        return payload
+    except HTTPException:
         session.rollback()
-        raise HTTPException(500, "Login fail!")
+        raise
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail="Login failed: " + str(e))
 
 def logout(response: Response):
     response.delete_cookie(

@@ -1,11 +1,25 @@
-from pydantic import BaseModel, EmailStr, Field
+from __future__ import annotations
+
 from typing import Optional
 
-class base_supplier(BaseModel):
-    id: Optional[int] | None
-    code: str = Field(min_length=2, unique=True)
+from pydantic import EmailStr, Field
+
+from schema.base import EntityReadSchema, EntityWriteSchema
+
+
+class base_supplier(EntityWriteSchema):
+    code: str = Field(min_length=2)
     name: str = Field(min_length=2)
     email: EmailStr
-    phone: str = Field(min_length=8, unique=True)
-    address: Optional[str] | None
-    description: Optional[str] | None
+    phone: str = Field(min_length=8)
+    address: Optional[str] = None
+    description: Optional[str] = None
+
+
+class base_supplier_read(EntityReadSchema):
+    code: str = Field(min_length=2)
+    name: str = Field(min_length=2)
+    email: EmailStr
+    phone: str = Field(min_length=8)
+    address: Optional[str] = None
+    description: Optional[str] = None

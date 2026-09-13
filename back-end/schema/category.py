@@ -1,8 +1,19 @@
-from pydantic import BaseModel, Field
+from __future__ import annotations
+
 from typing import Optional
 
-class base_category(BaseModel):
-    id: Optional[int] = None
-    code: str = Field(min_length=2, unique=True)
+from pydantic import Field
+
+from schema.base import EntityReadSchema, EntityWriteSchema
+
+
+class base_category(EntityWriteSchema):
+    code: str = Field(min_length=2)
     name: str = Field(min_length=2)
-    description: str = Field(default=None)
+    description: Optional[str] = None
+
+
+class base_category_read(EntityReadSchema):
+    code: str = Field(min_length=2)
+    name: str = Field(min_length=2)
+    description: Optional[str] = None

@@ -1,14 +1,17 @@
 <template>
     <div id="category">
         <DataTable
+            ref="dt"
             paginator 
-            :rows="20" 
+            :rows="rowsPerPage"
+            :first="currentPage * rowsPerPage"
+            @page="onPageChange"
             :rowsPerPageOptions="[5, 10, 20, 50,100,250,500,1000,5000]" 
             removable-sort
             resizable-columns
             reorderable-columns
             :value="categoryList"
-            :lazy="loading"
+            :loading="loading"
             size="small"
             striped-rows
             v-model:selection="selectCategory"
@@ -17,12 +20,12 @@
             filter-display="menu"
             data-key="id"
             @row-dblclick="OpenDialogEdit"
+            @select-all-change="onSelectAllChange"
             row-hover
             scrollable
-            scroll-height="650px"
-            :virtual-scroller-options="{ itemSize: 46 }"
-            paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
-            currentPageReportTemplate="{first} to {last} of {totalRecords}"
+            scroll-height="500px"
+            style="max-width: 1320px"
+            
         >
             <Toolbar>
                 <template #end>
@@ -132,34 +135,56 @@
 </template>
 <script setup lang="ts">
     definePageMeta({
-        middleware: 'auth',
+        // middleware: 'auth',
         layout: 'dashboard'
     })
-    import { FilterMatchMode, FilterOperator} from '@primevue/core/api'
+    import {
+        applyCategoryValidationErrors,
+        createCategoryErrors,
+        createCategoryFilters,
+        createEmptyCategoryForm,
+        type CategoryErrors,
+        type CategoryForm
+    } from '~/services/category.service'
     const { confirmDelete } = useConfirmDelete()
     const { t } = useI18n()
     const messageBox = MessageBox()
-    const categoryAction = useCategory() 
+    const categoryAction = useCategory()
     const selectCategory = ref([])
     const categoryList = ref<category[]>([])
+    const currentPage = ref(0)
+    const rowsPerPage = ref(20)
     const loading = ref(false)
     const btnLoading = ref(false)
     const editMode = ref(false)
     const openDialog = ref(false)
     const filters = ref()
-    const errors = ref({code: '', name: ''})
-    const categoryForm = ref({
-        id: 0, name: '', code: '', description: ''
-    })
+    const errors = ref<CategoryErrors>(createCategoryErrors())
+    const categoryForm = ref<CategoryForm>(createEmptyCategoryForm())
     const initFilters = () => {
-        filters.value = {
-            global: { value: null, matchMode: FilterMatchMode.CONTAINS },
-            name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },            
-            code: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
-            description: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }]}
-        };
+        filters.value = createCategoryFilters()
     }
     initFilters()
+
+    const getCurrentPageItems = () => {
+        const start = currentPage.value * rowsPerPage.value
+        const end = start + rowsPerPage.value
+        return categoryList.value.slice(start, end)
+    }
+
+    const onSelectAllChange = (event: any) => {
+        if (event.checked) {
+            selectCategory.value = getCurrentPageItems() as any
+        } else {
+            selectCategory.value = []
+        }
+    }
+
+    const onPageChange = (event: any) => {
+        currentPage.value = event.page
+        rowsPerPage.value = event.rows
+        selectCategory.value = []
+    }
     const clearFilter = () => {
         initFilters();
     }
@@ -169,8 +194,8 @@
         openDialog.value = false
         loading.value = false
         btnLoading.value = false
-        errors.value = {name: '', code: ''}
-        categoryForm.value = { id: 0, name: '', code: '', description: ''}
+        errors.value = createCategoryErrors()
+        categoryForm.value = createEmptyCategoryForm()
     }
     const OpenDialogEdit = (item: any) => {
         editMode.value = true
@@ -180,9 +205,11 @@
         categoryForm.value.description = item.data.description
         openDialog.value = true
     }
-    const successMessage = () => messageBox.success('Your data was saved successfully.')
+    const successMessage = () => messageBox.success(t('successMessage'))
     const getCategoryList = async () => {
         loading.value = true
+        currentPage.value = 0
+        selectCategory.value = []
         categoryList.value = await categoryAction.getAllCategory()
         loading.value = false
     }
@@ -197,19 +224,9 @@
             close()
         })
         .catch((error: any) => {
-            let respondedData = error?.data?.data?.detail
-            if(typeof respondedData != 'string' && respondedData.length > 0){
-                for(var i = 0; i < respondedData.length; i++){
-                    let fieldName = respondedData[i].loc[1]
-                    if(fieldName === 'name') errors.value.name = respondedData[i].msg
-                    
-                    if(fieldName === 'code') errors.value.code = respondedData[i].msg
-
-                }
-            }
+            errors.value = applyCategoryValidationErrors(error?.data?.data?.detail, errors.value)
             loading.value = false
             btnLoading.value = false
-            //messageBox.error('An issue have occurred please inform technicial support.')
         })
     }
     const update = async () => {
@@ -224,52 +241,44 @@
             successMessage()
         })
         .catch((error: any) =>{
-            let respondedData = error?.data?.data?.detail
-            var x = typeof respondedData
-            console.log(x)
-            if(typeof respondedData != 'string' && respondedData.length > 0){
-                for(var i = 0; i < respondedData.length; i++){
-                    let fieldName = respondedData[i].loc[1]
-                    if(fieldName === 'name') errors.value.name = respondedData[i].msg
-                    
-                    if(fieldName === 'code') errors.value.code = respondedData[i].msg
-
-                }
-            }
+            errors.value = applyCategoryValidationErrors(error?.data?.data?.detail, errors.value)
             loading.value = false
             btnLoading.value = false
         })
-        const remove = async () =>{
-            btnLoading.value = true
-            loading.value = true
-            await categoryAction.remove(selectCategory.value)
-            .then((res) => {
-                getCategoryList()
-                loading.value = false
-                btnLoading.value = false
-                successMessage()
-            })
-            .catch((error: any) => {
-                messageBox.error('An issue have occurred please inform technicial support.')
-            })
-        } 
     }
+
     const deleteMany = () =>{
-        if(!selectCategory.value.length) return
+        if(!selectCategory.value || selectCategory.value.length === 0) {
+            messageBox.error(t('warningMessage'))
+            return
+        }
 
         confirmDelete(
             async () => {
-                loading.value = true
-                const userIds = selectCategory.value.map((e: any) => e.id)
-                await categoryAction.remove(userIds)
-                .then( async () => {
-                    await getCategoryList()
-                    successMessage()
-                })
-                .catch((error: any) => {
+                try {
+                    loading.value = true
+                    const idsToDelete = selectCategory.value.map((e: any) => e.id).filter((id: any) => id)
+
+                    if(idsToDelete.length === 0) {
+                        messageBox.error(t('warningMessage'))
+                        loading.value = false
+                        return
+                    }
+
+                    await categoryAction.remove(idsToDelete)
+                    .then( async () => {
+                        selectCategory.value = []
+                        await getCategoryList()
+                        successMessage()
+                    })
+                    .catch((error: any) => {
+                        loading.value = false
+                        messageBox.error(t('errorMessage'))
+                    })
+                } catch (error) {
                     loading.value = false
-                    messageBox.error('An issue have occurred please inform technicial support.')
-                })
+                    messageBox.error(t('errorMessage'))
+                }
             }
         )
     }

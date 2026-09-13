@@ -1,105 +1,165 @@
 <script setup lang="ts">
-const router = useRouter();
-const menu = [
-  {
-    label: "Product",
-    icon: "pi pi-briefcase",
-    command: () => router.push("/product"),
-  },
-  {
-    label: "Category",
-    icon: "pi pi-slack",
-    command: () => router.push("/category"),
-  },
-  {
-    label: "Supplier",
-    icon: "pi pi-users",
-    command: () => router.push("/supplier"),
-  },
-  {
-    label: "Stock",
-    icon: "pi pi-warehouse",
-    command: () => router.push("/stock"),
-  },
-  {
-    label: "Order",
-    icon: "pi pi-receipt",
-    command: () => router.push("/order"),
-  },
-  {
-    label: "Bot",
-    icon: "pi pi-microchip-ai",
-    items:[
-      {
-        label: "Line Bot",
-        icon: "pi pi-comment",
-        command: () => router.push("/line-bot"),
-      },
-    ]
-  }
-];
+type BackendMenuNode = {
+  id?: number
+  label: string
+  path?: string | null
+  icon?: string | null
+  badge?: number | null
+  parent_id?: number | null
+  display_order?: number | null
+  type?: string | null
+  is_active?: boolean | null
+  children?: BackendMenuNode[]
+}
 
-const uiKit = [
-  {
-    label: "User",
-    icon: "pi pi-user",
-    command: () => router.push("/user"),
-  },
-  {
-    label: "Role",
-    icon: "pi pi-wrench",
-    command: () => router.push("/"),
-  },
-  
-];
+type PanelMenuItem = {
+  label: string
+  icon?: string
+  badge?: string
+  path: string
+  command?: () => void
+  items?: PanelMenuItem[]
+}
+import type { User, MenuNode } from "~~/store/state"
+import { useAuthStore } from "~~/store/state";
+import { useRouter } from "vue-router";
+import { computed } from "vue";
+const { t } = useI18n()
+const router = useRouter()
+const auth = useAuthStore()
 const emit = defineEmits(['logout'])
 
-async function logout(){
+const iconAliases: Record<string, string> = {
+  LayoutDashboard: 'pi pi-home',
+  Package: 'pi pi-box',
+  Box: 'pi pi-box',
+  Tag: 'pi pi-tag',
+  BarChart3: 'pi pi-chart-bar',
+  ArrowRightLeft: 'pi pi-arrows-h',
+  ShoppingCart: 'pi pi-shopping-cart',
+  FileText: 'pi pi-file',
+  Users: 'pi pi-users',
+  Shield: 'pi pi-shield',
+  Lock: 'pi pi-lock',
+  Settings: 'pi pi-cog',
+  MicrochipAi: 'pi pi-microchip-ai',
+  Briefcase: 'pi pi-briefcase',
+  Slack: 'pi pi-slack',
+  Warehouse: 'pi pi-warehouse',
+  Receipt: 'pi pi-receipt',
+  Comment: 'pi pi-comment',
+}
+
+
+
+const resolveIcon = (icon?: string | null) => {
+  if (!icon) {
+    return undefined
+  }
+
+  if (icon.startsWith('pi ')) {
+    return icon
+  }
+
+  if (icon.startsWith('pi-')) {
+    return `pi ${icon}`
+  }
+
+  return iconAliases[icon] ?? undefined
+}
+
+
+
+const buildMenuModel = (nodes: MenuNode[] = []): PanelMenuItem[] => {
+  return nodes.reduce<PanelMenuItem[]>((items, node) => {
+    const children = buildMenuModel(Array.isArray(node.children) ? node.children : [])
+
+    const menuItem: PanelMenuItem = {
+      label: node.label,
+      icon: resolveIcon(node.icon),
+      items: children.length ? children : [],
+      path: node.path as string,
+    }
+
+    items.push(menuItem)
+    return items
+  }, [])
+}
+
+
+const remoteMenu = computed(() => buildMenuModel(auth.getMenu as MenuNode[]))
+const user = computed(() => auth.getUser as User)
+
+async function logout() {
   emit('logout')
 }
 </script>
 
 <template>
-  <Card class="w-72 h-screen border-r flex flex-col" style="border-radius: 0;">
-    <!-- Brand -->
+  <Card class="w-72 h-screen overflow-y-auto border-r flex flex-col" style="border-radius: 0;">
     <template #title>
-      <div class="flex items-center gap-3 px-6">
-        <i class="pi pi-spin pi-bolt text-green-600 text-4xl"></i>
-        <span class="font-bold text-lg text-[#334155]">ULTIMA</span>
+      <div class="flex items-center justify-center">
+        <Avatar
+          shape="circle"
+          size="xlarge"
+        >
+
+        </Avatar>
+      </div>
+      <div class="flex items-center px-6">
+
+        <Button 
+          icon="pi pi-spin pi-envelope"
+          variant="link"
+          size="small"
+        >
+        </Button>
+        <span class="font-bold text-sm text-[#334155]">{{ user?.email }}</span>
       </div>
       <Divider></Divider>
     </template>
 
-    <!-- Menu -->
     <template #content>
-      <div class="flex-1 overflow-y-auto  py-4 space-y-2">
-      <PanelMenu
-        :model="menu"
-        class="ultima-menu"
-      />
-
-      <!-- Section -->
-      <div class="px-2 text-xs font-semibold text-slate-400 uppercase">
-        Setting
+      <div class="flex-1 overflow-y-auto py-4 space-y-2">
+        <PanelMenu
+          :model="remoteMenu"
+        >
+          <template #item="{ item }">
+            <router-link v-if="item.path" v-slot="{ href, navigate }" :to="item.path" custom>
+              <a v-ripple class="flex items-center px-4 cursor-pointer group" :href="href" @click="navigate">
+                <Button :icon="item.icon" :class="item.icon ? '' : 'mr-3'" size="small" variant="link" />
+                <span 
+                  :class="['ml-2', { 'font-semibold': item.items }]" 
+                >
+                  {{ t(item.label?.toString().toLocaleLowerCase() as string) }}
+                </span>
+                <Badge v-if="item?.items?.length" class="ml-auto" :value="item?.items?.length" />
+              </a>
+            </router-link>
+            <a v-else v-ripple class="flex items-center px-4 cursor-pointer group">
+                <Button :icon="item.icon" :class="item.icon ? '' : 'mr-3'" size="small" variant="link" />
+                <span 
+                  :class="['ml-2', { 'font-semibold': item.items }]" 
+                >
+                  {{ t(item.label?.toString().toLocaleLowerCase() as string) }}
+                </span>
+                <Badge v-if="item?.items?.length" class="ml-auto" :value="item?.items?.length" />
+            </a>
+          </template>
+        </PanelMenu>
+          
       </div>
-
-      <PanelMenu
-        :model="uiKit"
-        class="ultima-menu"
-      />
-    </div>
     </template>
 
     <template #footer>
-      <Button 
-        class="w-full" 
-        label="Logout" 
-        icon="pi pi-sign-out" 
+      <Button
+        class="w-full"
+        :label="t('btnLogout')"
+        icon="pi pi-sign-out"
         @click="logout"
       >
       </Button>
     </template>
-      
   </Card>
 </template>
 

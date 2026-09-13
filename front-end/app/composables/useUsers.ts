@@ -1,7 +1,10 @@
-export type user = {id: number; username: string; email: string; password: string, confirm_password: string,status: boolean}
+export type user = {id: number; username: string; email: string; password: string, confirm_password: string,status: boolean, role_id: number | null}
+import type { role } from '~/composables/useRole'
 
 export const useUsers = () => {
     const userList = async () => await $fetch<user[]>(`/api/user`)
+
+    const getRoleList = async () => await $fetch<role[]>(`/api/role`)
 
     const create = async (payload: user) => await $fetch(`/api/user`, { method: 'POST', body: payload })
 
@@ -11,6 +14,6 @@ export const useUsers = () => {
 
     const removeMany = async (ids: number[]) => await $fetch(`/api/user`, { method: 'DELETE', body: ids })
     
-    return { userList, create, update, remove, removeMany}
+    return { userList, create, update, remove, removeMany, getRoleList}
     
 }
