@@ -1,11 +1,7 @@
 <template>
-    <div id="income">
-        <h1 class="text-2xl font-bold mb-4">Income</h1>
-        
-    </div>
+  <FinancialRecordCrud record-type="expense" />
 </template>
+
 <script setup lang="ts">
-    definePageMeta({
-        layout: 'dashboard',
-    })
+definePageMeta({ layout: 'dashboard' })
 </script>

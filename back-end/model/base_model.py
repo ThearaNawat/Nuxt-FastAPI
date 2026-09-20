@@ -14,7 +14,7 @@ class Base(DeclarativeBase):
 class BaseModel(Base):
     __abstract__ = True
 
-    id: Mapped[Optional[int]] = mapped_column(Integer, primary_key=True, index=True)
+    id: Mapped[Optional[int]] = mapped_column(Integer, primary_key=True, index=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, nullable=False
     )

@@ -162,5 +162,6 @@ export default {
     currency: 'Currency',
     detail: 'Detail',
     export: 'Export',
-    select: 'Select {0}'
+    select: 'Select {0}',
+    received_date: 'Received Date'
 }   

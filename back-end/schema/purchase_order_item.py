@@ -14,6 +14,7 @@ class base_purchase_order_item(SchemaBase):
     quantity: int = Field(..., ge=1)
     unit_cost: Decimal = Field(..., ge=0)
     total_cost: Optional[Decimal] = 0
+    measurement_id: int = Field(..., description="The field measurement is required")
 
 
 class base_purchase_order_item_read(EntityReadSchema):

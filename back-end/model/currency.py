@@ -16,10 +16,9 @@ class Currency(BaseModel):
     is_base: Mapped[bool] = mapped_column(default=False, nullable=False)
     decimal_places: Mapped[Optional[int]] = mapped_column(Integer, default=2, nullable=True)
     
-    # stock_levels: Mapped[list["StockLevel"]] = relationship(
-    #     "StockLevel",
-    #     back_populates="currency"
-    # )
+    purchase_orders: Mapped[list["PurchaseOrder"]] = relationship(
+        back_populates="currency"
+    )
 
     stock_transaction_details: Mapped[list["StockTransactionDetail"]] = relationship(
         "StockTransactionDetail",

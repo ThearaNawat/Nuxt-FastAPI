@@ -4,10 +4,10 @@
           <TabList>
             <TabList>
               <Tab value="0">
-                {{t('stock_in')}}
+                {{t('stock')}}
               </Tab>
               <Tab value="1">
-                {{t('stock_out')}}
+                {{t('stock_transaction')}}
               </Tab>
             </TabList>
           </TabList>
@@ -359,8 +359,6 @@
           </TabPanel>
         </TabPanels>
     </Tabs>
-    
-
     
   </div>
 </template>

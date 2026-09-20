@@ -106,7 +106,7 @@ export default {
     reason: 'មូលហេតុ',
     reference_number: 'លេខយោង',
     order_number: 'លេខបញ្ជាទិញ',
-    required_date: 'ថ្ងៃទាក់ទាញ',
+    required_date: 'ថ្ងៃត្រូវការ',
     shipped_date: 'ថ្ងៃដឹកជញ្ជូន',
     notes: 'កំណត់សម្គាល់',
     order_date: 'ថ្ងៃបញ្ជាទិញ',
@@ -162,5 +162,6 @@ export default {
     currency: 'រូបិយប័ណ្ណ',
     detail: 'ព័ត៌មានលម្អិត',
     export: 'នាំចេញ',
-    select: 'ជ្រើសរើស {0}'
+    select: 'ជ្រើសរើស {0}',
+    received_date: 'ថ្ងៃទទួល'
 }

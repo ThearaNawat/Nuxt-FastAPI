@@ -23,6 +23,7 @@ class base_purchase_order(SchemaBase):
     discount_amount: float = Field(default=0)
     tax_amount: float = Field(default=0)
     total_amount: float = Field(default=0)
+    currency_id: Optional[int] = 0
     items: List[base_purchase_order_item] = Field(default_factory=list)
 
 
@@ -35,6 +36,7 @@ class base_purchase_order_read(EntityReadSchema):
     status: OrderStatusEnum = OrderStatusEnum.PENDING
     payment_status: int = Field(default=1)
     notes: Optional[str] = None
+    currency_id: Optional[int] = 0
     sub_total: float = Field(default=0)
     discount_amount: float = Field(default=0)
     tax_amount: float = Field(default=0)

@@ -1,469 +1,455 @@
 <template>
-  <div id="dashboard" class="space-y-6 pb-8 overflow-auto">
-    <!-- KPI Cards Section -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      <Card class="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900 dark:to-blue-800">
+  <main id="dashboard" class="space-y-6 pb-8">
+    <section class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <p class="text-sm font-medium text-primary">Dashboard</p>
+        <h1 class="mt-1 text-2xl font-semibold tracking-tight">Business overview</h1>
+        <p class="mt-1 text-sm text-surface-500">
+          A live summary of the records available to you.
+          <span v-if="lastUpdated">Updated {{ formatUpdatedAt(lastUpdated) }}.</span>
+        </p>
+      </div>
+
+      <div class="flex flex-wrap gap-2">
+        <Button label="New order" icon="pi pi-plus" size="small" @click="navigateTo('/order')" />
+        <Button label="View stock" icon="pi pi-warehouse" severity="secondary" outlined size="small" @click="navigateTo('/stock')" />
+        <Button icon="pi pi-refresh" severity="secondary" outlined size="small" :loading="loading" aria-label="Refresh dashboard" @click="loadDashboard" />
+      </div>
+    </section>
+
+    <Message v-if="hasUnavailableSources" severity="warn" :closable="false">
+      Some dashboard data could not be loaded because it is unavailable for your account.
+    </Message>
+
+    <section class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Key metrics">
+      <Card v-if="available.orders" class="border border-blue-100 bg-blue-50/70 dark:border-blue-900/70 dark:bg-blue-950/30">
         <template #content>
-          <div class="flex justify-between items-start">
+          <div class="flex items-start justify-between gap-4">
             <div>
-              <p class="text-gray-600 dark:text-gray-300 text-sm font-semibold mb-2">Total Sales</p>
-              <p class="text-3xl font-bold text-blue-600 dark:text-blue-300">{{ totalSales }}</p>
-              <p class="text-green-600 text-xs mt-2">+12% from last month</p>
+              <p class="text-sm font-medium text-surface-600 dark:text-surface-300">Total orders</p>
+              <p class="mt-2 text-3xl font-semibold">{{ formatNumber(orders.length) }}</p>
+              <p class="mt-2 text-xs text-surface-500">{{ deliveredOrders }} delivered · {{ openOrders }} open</p>
             </div>
-            <i class="pi pi-shopping-cart text-3xl text-blue-200 dark:text-blue-400"></i>
+            <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-900/70 dark:text-blue-300">
+              <i class="pi pi-shopping-cart text-xl" />
+            </span>
           </div>
         </template>
       </Card>
 
-      <Card class="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900 dark:to-green-800">
+      <Card v-if="available.invoices" class="border border-emerald-100 bg-emerald-50/70 dark:border-emerald-900/70 dark:bg-emerald-950/30">
         <template #content>
-          <div class="flex justify-between items-start">
+          <div class="flex items-start justify-between gap-4">
             <div>
-              <p class="text-gray-600 dark:text-gray-300 text-sm font-semibold mb-2">Total Orders</p>
-              <p class="text-3xl font-bold text-green-600 dark:text-green-300">{{ totalOrders }}</p>
-              <p class="text-green-600 text-xs mt-2">+8% from last month</p>
+              <p class="text-sm font-medium text-surface-600 dark:text-surface-300">Invoice amount</p>
+              <p class="mt-2 text-3xl font-semibold">{{ formatAmount(invoiceTotal) }}</p>
+              <p class="mt-2 text-xs text-surface-500">{{ formatAmount(invoicePaid) }} paid · {{ formatAmount(invoiceOutstanding) }} outstanding</p>
             </div>
-            <i class="pi pi-list text-3xl text-green-200 dark:text-green-400"></i>
+            <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-900/70 dark:text-emerald-300">
+              <i class="pi pi-receipt text-xl" />
+            </span>
           </div>
         </template>
       </Card>
 
-      <Card class="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900 dark:to-purple-800">
+      <Card v-if="available.customers" class="border border-amber-100 bg-amber-50/70 dark:border-amber-900/70 dark:bg-amber-950/30">
         <template #content>
-          <div class="flex justify-between items-start">
+          <div class="flex items-start justify-between gap-4">
             <div>
-              <p class="text-gray-600 dark:text-gray-300 text-sm font-semibold mb-2">Products in Stock</p>
-              <p class="text-3xl font-bold text-purple-600 dark:text-purple-300">{{ productsInStock }}</p>
-              <p class="text-red-600 text-xs mt-2">3 low stock items</p>
+              <p class="text-sm font-medium text-surface-600 dark:text-surface-300">Customers</p>
+              <p class="mt-2 text-3xl font-semibold">{{ formatNumber(customers.length) }}</p>
+              <p class="mt-2 text-xs text-surface-500">{{ customersWithOrders }} with recorded orders</p>
             </div>
-            <i class="pi pi-box text-3xl text-purple-200 dark:text-purple-400"></i>
+            <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-900/70 dark:text-amber-300">
+              <i class="pi pi-users text-xl" />
+            </span>
           </div>
         </template>
       </Card>
 
-      <Card class="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900 dark:to-orange-800">
+      <Card v-if="available.products" class="border border-violet-100 bg-violet-50/70 dark:border-violet-900/70 dark:bg-violet-950/30">
         <template #content>
-          <div class="flex justify-between items-start">
+          <div class="flex items-start justify-between gap-4">
             <div>
-              <p class="text-gray-600 dark:text-gray-300 text-sm font-semibold mb-2">Active Customers</p>
-              <p class="text-3xl font-bold text-orange-600 dark:text-orange-300">{{ activeCustomers }}</p>
-              <p class="text-green-600 text-xs mt-2">+5 new this month</p>
+              <p class="text-sm font-medium text-surface-600 dark:text-surface-300">Inventory units</p>
+              <p class="mt-2 text-3xl font-semibold">{{ formatNumber(inventoryUnits) }}</p>
+              <p class="mt-2 text-xs text-surface-500">{{ lowStockProducts.length }} products at or below 25 units</p>
             </div>
-            <i class="pi pi-users text-3xl text-orange-200 dark:text-orange-400"></i>
+            <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-100 text-violet-600 dark:bg-violet-900/70 dark:text-violet-300">
+              <i class="pi pi-box text-xl" />
+            </span>
           </div>
         </template>
       </Card>
-    </div>
+    </section>
 
-    <!-- Charts Section -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-      <!-- Sales Revenue Chart -->
-      <Card class="lg:col-span-2">
-        <template #header>
-          <div class="flex items-center justify-between p-4">
-            <h5 class="text-lg font-bold">Sales Revenue Trend</h5>
-            <div class="flex gap-2">
-              <Button icon="pi pi-download" severity="secondary" text size="small" />
+    <section v-if="loading" class="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <Card v-for="item in 3" :key="item" class="lg:first:col-span-2">
+        <template #content><Skeleton height="19rem" /></template>
+      </Card>
+    </section>
+
+    <template v-else>
+      <section v-if="available.orders" class="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <Card class="lg:col-span-2">
+          <template #title>
+            <div class="flex items-center justify-between gap-3">
+              <span>Orders over the last six months</span>
+              <Tag :value="`${orders.length} total`" severity="info" />
             </div>
-          </div>
-        </template>
-        <template #content>
-          <Chart type="line" :data="chartDataSalesRevenue" :options="chartOptionsSalesRevenue" class="h-[20rem]" />
-        </template>
-      </Card>
+          </template>
+          <template #content>
+            <div v-if="orders.length" class="h-80">
+              <Chart type="line" :data="orderTrendData" :options="lineChartOptions" class="h-full" />
+            </div>
+            <DashboardEmpty v-else icon="pi pi-shopping-cart" message="No orders have been recorded yet." />
+          </template>
+        </Card>
 
-      <!-- Order Status Distribution -->
-      <Card>
-        <template #header>
-          <div class="flex items-center justify-between p-4">
-            <h5 class="text-lg font-bold">Order Status</h5>
-          </div>
-        </template>
-        <template #content>
-          <Chart type="doughnut" :data="chartDataOrderStatus" :options="chartOptionsOrderStatus" class="h-[20rem]" />
-        </template>
-      </Card>
-    </div>
+        <Card>
+          <template #title>Order status</template>
+          <template #content>
+            <div v-if="orders.length" class="h-80">
+              <Chart type="doughnut" :data="orderStatusData" :options="doughnutChartOptions" class="h-full" />
+            </div>
+            <DashboardEmpty v-else icon="pi pi-chart-pie" message="No order status data yet." />
+          </template>
+        </Card>
+      </section>
 
-    <!-- Top Products & Stock Levels -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <!-- Top Selling Products -->
-      <Card>
-        <template #header>
-          <div class="flex items-center justify-between p-4">
-            <h5 class="text-lg font-bold">Top Selling Products</h5>
-            <Button icon="pi pi-arrow-right" severity="secondary" text size="small" />
-          </div>
-        </template>
-        <template #content>
-          <DataTable :value="topProducts" :rows="5" striped-rows>
-            <Column field="name" header="Product Name"></Column>
-            <Column field="sales" header="Sales">
-              <template #body="slotProps">
-                <Tag :value="`${slotProps.data.sales} units`" severity="info"></Tag>
-              </template>
-            </Column>
-            <Column field="revenue" header="Revenue">
-              <template #body="slotProps">
-                <span class="font-semibold text-green-600">{{ slotProps.data.revenue }}</span>
-              </template>
-            </Column>
-          </DataTable>
-        </template>
-      </Card>
+      <section v-if="available.products" class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <Card>
+          <template #title>Inventory by category</template>
+          <template #content>
+            <div v-if="products.length" class="h-72">
+              <Chart type="bar" :data="stockByCategoryData" :options="barChartOptions" class="h-full" />
+            </div>
+            <DashboardEmpty v-else icon="pi pi-box" message="No products have been added yet." />
+          </template>
+        </Card>
 
-      <!-- Stock Level Overview -->
-      <Card>
-        <template #header>
-          <div class="flex items-center justify-between p-4">
-            <h5 class="text-lg font-bold">Stock Levels by Category</h5>
-            <Button icon="pi pi-arrow-right" severity="secondary" text size="small" />
-          </div>
-        </template>
-        <template #content>
-          <Chart type="bar" :data="chartDataStockByCategory" :options="chartOptionsStockByCategory" class="h-[15rem]" />
-        </template>
-      </Card>
-    </div>
+        <Card>
+          <template #title>
+            <div class="flex items-center justify-between gap-3">
+              <span>Inventory attention</span>
+              <Button label="View stock" icon="pi pi-arrow-right" severity="secondary" text size="small" @click="navigateTo('/stock')" />
+            </div>
+          </template>
+          <template #content>
+            <DataTable v-if="lowStockProducts.length" :value="lowStockProducts" size="small" striped-rows>
+              <Column field="name" header="Product">
+                <template #body="{ data }">
+                  <div>
+                    <p class="font-medium">{{ data.name }}</p>
+                    <p class="text-xs text-surface-500">{{ productCategoryName(data) }}</p>
+                  </div>
+                </template>
+              </Column>
+              <Column header="Available" class="text-right">
+                <template #body="{ data }">
+                  <Tag :value="formatNumber(productStock(data))" :severity="productStock(data) === 0 ? 'danger' : 'warn'" />
+                </template>
+              </Column>
+            </DataTable>
+            <DashboardEmpty v-else icon="pi pi-check-circle" message="No products are at or below 25 units." />
+          </template>
+        </Card>
+      </section>
 
-    <!-- Monthly Performance & Orders by Customer -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <!-- Orders by Month -->
-      <Card>
-        <template #header>
-          <div class="flex items-center justify-between p-4">
-            <h5 class="text-lg font-bold">Orders by Month</h5>
-          </div>
-        </template>
-        <template #content>
-          <Chart type="bar" :data="chartDataOrdersByMonth" :options="chartOptionsOrdersByMonth" class="h-[15rem]" />
-        </template>
-      </Card>
+      <section v-if="available.orders">
+        <Card>
+          <template #title>
+            <div class="flex items-center justify-between gap-3">
+              <span>Recent orders</span>
+              <Button label="View all" icon="pi pi-arrow-right" severity="secondary" text size="small" @click="navigateTo('/order')" />
+            </div>
+          </template>
+          <template #content>
+            <DataTable v-if="recentOrders.length" :value="recentOrders" size="small" striped-rows responsive-layout="scroll">
+              <Column field="order_number" header="Order #" />
+              <Column header="Customer">
+                <template #body="{ data }">{{ customerName(data.customer_id) }}</template>
+              </Column>
+              <Column header="Order date">
+                <template #body="{ data }">{{ formatDate(data.order_date) }}</template>
+              </Column>
+              <Column header="Required date">
+                <template #body="{ data }">{{ formatDate(data.required_date) }}</template>
+              </Column>
+              <Column header="Status">
+                <template #body="{ data }">
+                  <Tag :value="formatStatus(data.status)" :severity="orderStatusSeverity(data.status)" />
+                </template>
+              </Column>
+            </DataTable>
+            <DashboardEmpty v-else icon="pi pi-shopping-cart" message="No orders have been recorded yet." />
+          </template>
+        </Card>
+      </section>
 
-      <!-- Category Performance -->
-      <Card>
-        <template #header>
-          <div class="flex items-center justify-between p-4">
-            <h5 class="text-lg font-bold">Sales by Category</h5>
-          </div>
-        </template>
-        <template #content>
-          <Chart type="pie" :data="chartDataCategoryPerformance" :options="chartOptionsCategoryPerformance" class="h-[15rem]" />
-        </template>
-      </Card>
-    </div>
-
-    <!-- Recent Orders Table -->
-    <Card>
-      <template #header>
-        <div class="flex items-center justify-between p-4">
-          <h5 class="text-lg font-bold">Recent Orders</h5>
-          <Button label="View All" icon="pi pi-arrow-right" severity="secondary" text size="small" />
-        </div>
-      </template>
-      <template #content>
-        <DataTable :value="recentOrders" :rows="10" striped-rows class="p-datatable-sm">
-          <Column field="orderNumber" header="Order #" style="width: 10%"></Column>
-          <Column field="customer" header="Customer" style="width: 20%"></Column>
-          <Column field="orderDate" header="Date" style="width: 15%">
-            <template #body="slotProps">
-              {{ formatDate(slotProps.data.orderDate) }}
-            </template>
-          </Column>
-          <Column field="total" header="Total" style="width: 15%">
-            <template #body="slotProps">
-              <span class="font-semibold text-green-600">${{ slotProps.data.total }}</span>
-            </template>
-          </Column>
-          <Column field="status" header="Status" style="width: 15%">
-            <template #body="slotProps">
-              <Tag :value="slotProps.data.status" :severity="getStatusSeverity(slotProps.data.status)"></Tag>
-            </template>
-          </Column>
-          <Column header="Action" style="width: 10%">
-            <template #body>
-              <Button icon="pi pi-eye" severity="info" text rounded size="small" />
-            </template>
-          </Column>
-        </DataTable>
-      </template>
-    </Card>
-  </div>
+      <section v-if="!hasAnyData" class="py-12">
+        <DashboardEmpty icon="pi pi-database" message="There is no dashboard data to display yet." />
+      </section>
+    </template>
+  </main>
 </template>
+
 <script setup lang="ts">
-import { onMounted, ref, computed } from 'vue';
+import type { AxiosInstance } from 'axios'
+// import { computed, defineComponent, h, onMounted, ref } from 'vue'
 
-definePageMeta({
-    // middleware: 'auth',
-    layout: 'dashboard'
-});
+definePageMeta({ layout: 'dashboard' })
 
-// KPI Data
-const totalSales = ref('$125,430');
-const totalOrders = ref('342');
-const productsInStock = ref('1,245');
-const activeCustomers = ref('847');
+type OrderStatus = 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled' | string
 
-// Recent Orders Mock Data
-const recentOrders = ref([
-    { orderNumber: 'ORD-001', customer: 'John Doe', orderDate: '2024-07-18', total: '2,500', status: 'delivered' },
-    { orderNumber: 'ORD-002', customer: 'Jane Smith', orderDate: '2024-07-17', total: '1,850', status: 'shipped' },
-    { orderNumber: 'ORD-003', customer: 'Mike Johnson', orderDate: '2024-07-16', total: '3,200', status: 'confirmed' },
-    { orderNumber: 'ORD-004', customer: 'Sarah Williams', orderDate: '2024-07-15', total: '950', status: 'pending' },
-    { orderNumber: 'ORD-005', customer: 'Tom Brown', orderDate: '2024-07-14', total: '2,100', status: 'delivered' },
-    { orderNumber: 'ORD-006', customer: 'Lisa Garcia', orderDate: '2024-07-13', total: '1,750', status: 'shipped' },
-    { orderNumber: 'ORD-007', customer: 'David Lee', orderDate: '2024-07-12', total: '2,850', status: 'delivered' },
-    { orderNumber: 'ORD-008', customer: 'Emma Davis', orderDate: '2024-07-11', total: '1,200', status: 'confirmed' },
-]);
+type SalesOrder = {
+  id: number
+  order_number: string
+  customer_id: number | null
+  order_date?: string | null
+  required_date?: string | null
+  status: OrderStatus
+}
 
-// Top Products Mock Data
-const topProducts = ref([
-    { name: 'Premium Coffee Beans', sales: 450, revenue: '$18,000' },
-    { name: 'Organic Tea Mix', sales: 320, revenue: '$12,800' },
-    { name: 'Dark Chocolate Bar', sales: 285, revenue: '$14,250' },
-    { name: 'Honey Jar (1kg)', sales: 210, revenue: '$10,500' },
-    { name: 'Almond Butter', sales: 180, revenue: '$9,000' },
-]);
+type Customer = {
+  id: number
+  customer_name: string
+}
 
-// Chart Data - Sales Revenue Trend
-const chartDataSalesRevenue = ref();
-const chartOptionsSalesRevenue = ref();
+type Product = {
+  id: number
+  name: string
+  category_id?: number | null
+  category_name?: string | null
+  stock?: number | string | null
+}
 
-const setChartDataSalesRevenue = () => {
-    const documentStyle = getComputedStyle(document.documentElement);
+type Category = {
+  id: number
+  name: string
+}
+
+type Invoice = {
+  id: number
+  amount: number | string
+  paid_amount: number | string
+  status: string
+}
+
+type InvoiceResponse = { data?: Invoice[] }
+type DataSource = 'orders' | 'customers' | 'products' | 'categories' | 'invoices'
+
+const { $axios } = useNuxtApp()
+const axios = $axios as AxiosInstance
+
+const loading = ref(true)
+const lastUpdated = ref<Date | null>(null)
+const orders = ref<SalesOrder[]>([])
+const customers = ref<Customer[]>([])
+const products = ref<Product[]>([])
+const categories = ref<Category[]>([])
+const invoices = ref<Invoice[]>([])
+const available = ref<Record<DataSource, boolean>>({
+  orders: false,
+  customers: false,
+  products: false,
+  categories: false,
+  invoices: false,
+})
+
+const DashboardEmpty = defineComponent({
+  props: {
+    icon: { type: String, required: true },
+    message: { type: String, required: true },
+  },
+  setup(props) {
+    return () => h('div', { class: 'flex h-56 flex-col items-center justify-center text-center text-surface-500' }, [
+      h('i', { class: `${props.icon} mb-3 text-3xl text-surface-300` }),
+      h('p', { class: 'text-sm' }, props.message),
+    ])
+  },
+})
+
+const toNumber = (value: number | string | null | undefined) => {
+  const numberValue = Number(value)
+  return Number.isFinite(numberValue) ? numberValue : 0
+}
+
+const formatNumber = (value: number) => new Intl.NumberFormat().format(value)
+const formatAmount = (value: number) => new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(value)
+
+const formatDate = (value?: string | null) => {
+  if (!value) return '—'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return '—'
+  return new Intl.DateTimeFormat(undefined, { day: '2-digit', month: 'short', year: 'numeric' }).format(date)
+}
+
+const formatUpdatedAt = (value: Date) => new Intl.DateTimeFormat(undefined, {
+  day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
+}).format(value)
+
+const formatStatus = (status: OrderStatus) => {
+  if (!status) return 'Unknown'
+  return status.replaceAll('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase())
+}
+
+const orderStatusSeverity = (status: OrderStatus) => ({
+  delivered: 'success',
+  shipped: 'info',
+  confirmed: 'warn',
+  pending: 'secondary',
+  cancelled: 'danger',
+}[status] ?? 'secondary') as 'success' | 'info' | 'warn' | 'secondary' | 'danger'
+
+const productStock = (product: Product) => toNumber(product.stock)
+const categoryNames = computed(() => new Map(categories.value.map((category) => [category.id, category.name])))
+const productCategoryName = (product: Product) =>
+  product.category_name || (product.category_id ? categoryNames.value.get(product.category_id) : undefined) || 'Uncategorized'
+
+const customerNames = computed(() => new Map(customers.value.map((customer) => [customer.id, customer.customer_name])))
+const customerName = (customerId: number | null) => customerId ? customerNames.value.get(customerId) || `Customer #${customerId}` : '—'
+
+const deliveredOrders = computed(() => orders.value.filter((order) => order.status === 'delivered').length)
+const openOrders = computed(() => orders.value.filter((order) => !['delivered', 'cancelled'].includes(order.status)).length)
+const customersWithOrders = computed(() => new Set(orders.value.map((order) => order.customer_id).filter(Boolean)).size)
+const inventoryUnits = computed(() => products.value.reduce((total, product) => total + productStock(product), 0))
+const lowStockProducts = computed(() => products.value
+  .filter((product) => productStock(product) <= 25)
+  .sort((first, second) => productStock(first) - productStock(second))
+  .slice(0, 6))
+
+const invoiceTotal = computed(() => invoices.value.reduce((total, invoice) => total + toNumber(invoice.amount), 0))
+const invoicePaid = computed(() => invoices.value.reduce((total, invoice) => total + toNumber(invoice.paid_amount), 0))
+const invoiceOutstanding = computed(() => Math.max(invoiceTotal.value - invoicePaid.value, 0))
+
+const dateValue = (value?: string | null) => {
+  const date = value ? new Date(value).getTime() : 0
+  return Number.isNaN(date) ? 0 : date
+}
+
+const recentOrders = computed(() => [...orders.value]
+  .sort((first, second) => dateValue(second.order_date) - dateValue(first.order_date))
+  .slice(0, 8))
+
+const hasAnyData = computed(() => orders.value.length + customers.value.length + products.value.length + invoices.value.length > 0)
+const hasUnavailableSources = computed(() => !loading.value && ['orders', 'customers', 'products', 'invoices']
+  .some((source) => !available.value[source as DataSource]))
+
+const monthBuckets = computed(() => {
+  const now = new Date()
+  return Array.from({ length: 6 }, (_, index) => {
+    const date = new Date(now.getFullYear(), now.getMonth() - (5 - index), 1)
     return {
-        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-        datasets: [
-            {
-                label: 'Monthly Revenue',
-                borderColor: documentStyle.getPropertyValue('--p-blue-500'),
-                backgroundColor: documentStyle.getPropertyValue('--p-blue-100'),
-                fill: true,
-                tension: 0.4,
-                data: [28000, 32000, 35000, 31000, 42000, 48000, 52000, 49000, 55000, 58000, 61000, 65000]
-            }
-        ]
-    };
-};
-
-const setChartOptionsSalesRevenue = () => {
-    const documentStyle = getComputedStyle(document.documentElement);
-    const textColor = documentStyle.getPropertyValue('--p-text-color');
-    const textColorSecondary = documentStyle.getPropertyValue('--p-text-muted-color');
-    const surfaceBorder = documentStyle.getPropertyValue('--p-content-border-color');
-
-    return {
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                labels: { color: textColor }
-            }
-        },
-        scales: {
-            x: {
-                ticks: { color: textColorSecondary },
-                grid: { color: surfaceBorder }
-            },
-            y: {
-                ticks: { color: textColorSecondary },
-                grid: { color: surfaceBorder }
-            }
-        }
-    };
-};
-
-// Chart Data - Order Status
-const chartDataOrderStatus = ref();
-const chartOptionsOrderStatus = ref();
-
-const setChartDataOrderStatus = () => {
-    const documentStyle = getComputedStyle(document.documentElement);
-    return {
-        labels: ['Pending', 'Confirmed', 'Shipped', 'Delivered', 'Cancelled'],
-        datasets: [
-            {
-                data: [12, 25, 35, 250, 8],
-                backgroundColor: [
-                    documentStyle.getPropertyValue('--p-yellow-500'),
-                    documentStyle.getPropertyValue('--p-blue-500'),
-                    documentStyle.getPropertyValue('--p-purple-500'),
-                    documentStyle.getPropertyValue('--p-green-500'),
-                    documentStyle.getPropertyValue('--p-red-500')
-                ]
-            }
-        ]
-    };
-};
-
-const setChartOptionsOrderStatus = () => {
-    const documentStyle = getComputedStyle(document.documentElement);
-    const textColor = documentStyle.getPropertyValue('--p-text-color');
-    return {
-        plugins: {
-            legend: {
-                labels: { color: textColor }
-            }
-        }
-    };
-};
-
-// Chart Data - Stock by Category
-const chartDataStockByCategory = ref();
-const chartOptionsStockByCategory = ref();
-
-const setChartDataStockByCategory = () => {
-    const documentStyle = getComputedStyle(document.documentElement);
-    return {
-        labels: ['Beverages', 'Snacks', 'Dairy', 'Bakery', 'Frozen'],
-        datasets: [
-            {
-                label: 'Stock Quantity',
-                backgroundColor: documentStyle.getPropertyValue('--p-purple-500'),
-                data: [320, 245, 180, 150, 200]
-            }
-        ]
-    };
-};
-
-const setChartOptionsStockByCategory = () => {
-    const documentStyle = getComputedStyle(document.documentElement);
-    const textColor = documentStyle.getPropertyValue('--p-text-color');
-    const textColorSecondary = documentStyle.getPropertyValue('--p-text-muted-color');
-    const surfaceBorder = documentStyle.getPropertyValue('--p-content-border-color');
-
-    return {
-        maintainAspectRatio: false,
-        indexAxis: 'y',
-        plugins: {
-            legend: {
-                labels: { color: textColor }
-            }
-        },
-        scales: {
-            x: {
-                ticks: { color: textColorSecondary },
-                grid: { color: surfaceBorder }
-            },
-            y: {
-                ticks: { color: textColorSecondary },
-                grid: { color: surfaceBorder }
-            }
-        }
-    };
-};
-
-// Chart Data - Orders by Month
-const chartDataOrdersByMonth = ref();
-const chartOptionsOrdersByMonth = ref();
-
-const setChartDataOrdersByMonth = () => {
-    const documentStyle = getComputedStyle(document.documentElement);
-    return {
-        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-        datasets: [
-            {
-                label: 'Number of Orders',
-                backgroundColor: documentStyle.getPropertyValue('--p-green-500'),
-                data: [18, 22, 25, 20, 32, 35, 28, 30, 33, 35, 38, 40]
-            }
-        ]
-    };
-};
-
-const setChartOptionsOrdersByMonth = () => {
-    const documentStyle = getComputedStyle(document.documentElement);
-    const textColor = documentStyle.getPropertyValue('--p-text-color');
-    const textColorSecondary = documentStyle.getPropertyValue('--p-text-muted-color');
-    const surfaceBorder = documentStyle.getPropertyValue('--p-content-border-color');
-
-    return {
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                labels: { color: textColor }
-            }
-        },
-        scales: {
-            x: {
-                ticks: { color: textColorSecondary },
-                grid: { color: surfaceBorder }
-            },
-            y: {
-                ticks: { color: textColorSecondary },
-                grid: { color: surfaceBorder }
-            }
-        }
-    };
-};
-
-// Chart Data - Category Performance
-const chartDataCategoryPerformance = ref();
-const chartOptionsCategoryPerformance = ref();
-
-const setChartDataCategoryPerformance = () => {
-    const documentStyle = getComputedStyle(document.documentElement);
-    return {
-        labels: ['Beverages', 'Snacks', 'Dairy', 'Bakery', 'Frozen'],
-        datasets: [
-            {
-                data: [28000, 22000, 18000, 15000, 16000],
-                backgroundColor: [
-                    documentStyle.getPropertyValue('--p-orange-500'),
-                    documentStyle.getPropertyValue('--p-cyan-500'),
-                    documentStyle.getPropertyValue('--p-pink-500'),
-                    documentStyle.getPropertyValue('--p-indigo-500'),
-                    documentStyle.getPropertyValue('--p-teal-500')
-                ]
-            }
-        ]
-    };
-};
-
-const setChartOptionsCategoryPerformance = () => {
-    const documentStyle = getComputedStyle(document.documentElement);
-    const textColor = documentStyle.getPropertyValue('--p-text-color');
-    return {
-        plugins: {
-            legend: {
-                labels: { color: textColor }
-            }
-        }
-    };
-};
-
-// Format Date Helper
-const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-};
-
-// Get Status Severity
-const getStatusSeverity = (status: string) => {
-    switch(status) {
-        case 'delivered':
-            return 'success';
-        case 'shipped':
-            return 'info';
-        case 'confirmed':
-            return 'warning';
-        case 'pending':
-            return 'secondary';
-        case 'cancelled':
-            return 'danger';
-        default:
-            return 'secondary';
+      key: `${date.getFullYear()}-${date.getMonth()}`,
+      label: new Intl.DateTimeFormat(undefined, { month: 'short' }).format(date),
     }
-};
+  })
+})
 
-onMounted(() => {
-    chartDataSalesRevenue.value = setChartDataSalesRevenue();
-    chartOptionsSalesRevenue.value = setChartOptionsSalesRevenue();
-    chartDataOrderStatus.value = setChartDataOrderStatus();
-    chartOptionsOrderStatus.value = setChartOptionsOrderStatus();
-    chartDataStockByCategory.value = setChartDataStockByCategory();
-    chartOptionsStockByCategory.value = setChartOptionsStockByCategory();
-    chartDataOrdersByMonth.value = setChartDataOrdersByMonth();
-    chartOptionsOrdersByMonth.value = setChartOptionsOrdersByMonth();
-    chartDataCategoryPerformance.value = setChartDataCategoryPerformance();
-    chartOptionsCategoryPerformance.value = setChartOptionsCategoryPerformance();
-});
+const orderTrendData = computed(() => ({
+  labels: monthBuckets.value.map((month) => month.label),
+  datasets: [{
+    label: 'Orders',
+    data: monthBuckets.value.map((month) => orders.value.filter((order) => {
+      const date = order.order_date ? new Date(order.order_date) : null
+      return date && !Number.isNaN(date.getTime()) && `${date.getFullYear()}-${date.getMonth()}` === month.key
+    }).length),
+    borderColor: '#3b82f6',
+    backgroundColor: 'rgba(59, 130, 246, 0.14)',
+    fill: true,
+    tension: 0.35,
+    pointRadius: 3,
+    pointHoverRadius: 5,
+  }],
+}))
+
+const orderStatusData = computed(() => {
+  const statuses: OrderStatus[] = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled']
+  const counts = statuses.map((status) => orders.value.filter((order) => order.status === status).length)
+  return {
+    labels: statuses.map(formatStatus),
+    datasets: [{
+      data: counts,
+      backgroundColor: ['#94a3b8', '#f59e0b', '#38bdf8', '#22c55e', '#ef4444'],
+      borderWidth: 0,
+      hoverOffset: 5,
+    }],
+  }
+})
+
+const stockByCategoryData = computed(() => {
+  const totals = new Map<string, number>()
+  products.value.forEach((product) => {
+    const category = productCategoryName(product)
+    totals.set(category, (totals.get(category) || 0) + productStock(product))
+  })
+  const entries = [...totals.entries()].sort((first, second) => second[1] - first[1]).slice(0, 6)
+  return {
+    labels: entries.map(([name]) => name),
+    datasets: [{
+      label: 'Units in stock',
+      data: entries.map(([, quantity]) => quantity),
+      backgroundColor: '#8b5cf6',
+      borderRadius: 6,
+      maxBarThickness: 32,
+    }],
+  }
+})
+
+const lineChartOptions = {
+  maintainAspectRatio: false,
+  plugins: { legend: { display: false } },
+  scales: {
+    x: { grid: { display: false }, ticks: { color: '#64748b' } },
+    y: { beginAtZero: true, ticks: { precision: 0, color: '#64748b' }, grid: { color: 'rgba(148, 163, 184, 0.18)' } },
+  },
+}
+
+const doughnutChartOptions = {
+  maintainAspectRatio: false,
+  cutout: '63%',
+  plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, usePointStyle: true, padding: 14, color: '#64748b' } } },
+}
+
+const barChartOptions = {
+  maintainAspectRatio: false,
+  indexAxis: 'y',
+  plugins: { legend: { display: false } },
+  scales: {
+    x: { beginAtZero: true, ticks: { precision: 0, color: '#64748b' }, grid: { color: 'rgba(148, 163, 184, 0.18)' } },
+    y: { ticks: { color: '#64748b' }, grid: { display: false } },
+  },
+}
+
+const loadDashboard = async () => {
+  loading.value = true
+
+  const [ordersResult, customersResult, productsResult, categoriesResult, invoicesResult] = await Promise.allSettled([
+    axios.get('/sales-order/'),
+    axios.get('/customer/'),
+    axios.get('/product/'),
+    axios.get('/category/'),
+    axios.get('/invoice/?page=1&limit=100'),
+  ])
+
+  available.value.orders = ordersResult.status === 'fulfilled'
+  available.value.customers = customersResult.status === 'fulfilled'
+  available.value.products = productsResult.status === 'fulfilled'
+  available.value.categories = categoriesResult.status === 'fulfilled'
+  available.value.invoices = invoicesResult.status === 'fulfilled'
+
+  orders.value = ordersResult.status === 'fulfilled' && Array.isArray(ordersResult.value.data) ? ordersResult.value.data : []
+  customers.value = customersResult.status === 'fulfilled' && Array.isArray(customersResult.value.data) ? customersResult.value.data : []
+  products.value = productsResult.status === 'fulfilled' && Array.isArray(productsResult.value.data) ? productsResult.value.data : []
+  categories.value = categoriesResult.status === 'fulfilled' && Array.isArray(categoriesResult.value.data) ? categoriesResult.value.data : []
+  invoices.value = invoicesResult.status === 'fulfilled' && Array.isArray((invoicesResult.value.data as InvoiceResponse)?.data)
+    ? (invoicesResult.value.data as InvoiceResponse).data as Invoice[]
+    : []
+
+  lastUpdated.value = new Date()
+  loading.value = false
+}
+
+onMounted(loadDashboard)
 </script>

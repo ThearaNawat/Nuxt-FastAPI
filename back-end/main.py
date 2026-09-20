@@ -2,7 +2,7 @@
 from fastapi import FastAPI, status, Depends
 from fastapi.responses import JSONResponse
 from infrastructure.database import create_db_and_table, drop_db_and_table
-from routers import user as user_router, category, supplier, product, menu_item_router, role_router, stock, stock_transaction, sales_order, customer, warehouse, purchase_order, purchase_order_item, measurement_router, currency
+from routers import user as user_router, category, supplier, product, menu_item_router, role_router, stock, stock_transaction, sales_order, customer, warehouse, purchase_order, purchase_order_item, measurement_router, currency, income, expense
 from routers import invoice as invoice_router
 from core.middleware import auth_middleware
 from fastapi.middleware.cors import CORSMiddleware
@@ -60,6 +60,8 @@ app.include_router(purchase_order_item.router)
 app.include_router(invoice_router.router)
 app.include_router(measurement_router.router)
 app.include_router(currency.router)
+app.include_router(income.router)
+app.include_router(expense.router)
 app.include_router(__import__('routers.purchase_order', fromlist=['router']).router)
 
 

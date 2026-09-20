@@ -10,7 +10,7 @@ from model.base_model import BaseModel
 from model.purchase_order_item import PurchaseOrderItem
 from model.sales_order import OrderStatusEnum
 from model.supplier import Supplier
-
+from model.currency import Currency
 class PamentStatus(int, enum.Enum):
     PADDING = 1
     PAID = 2
@@ -39,12 +39,13 @@ class PurchaseOrder(BaseModel):
     )
     payment_status: Mapped[PamentStatus] = mapped_column(SAEnum(PamentStatus), default=PamentStatus.PADDING, nullable=False)
     notes: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True)
-    currency_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    currency_id: Mapped[Optional[int]] = mapped_column(ForeignKey("CURRENCY.id"), nullable=True, index=True)
     sub_total: Mapped[float] = mapped_column(Float, default=0, nullable=False)
     discount_amount: Mapped[float] = mapped_column(Float, default=0, nullable=False)
     tax_amount: Mapped[float] = mapped_column(Float, default=0, nullable=False)
     total_amount: Mapped[float] = mapped_column(Float, default=0, nullable=False)
     supplier: Mapped[Supplier] = relationship(back_populates="purchase_orders")
+    currency: Mapped[Currency] = relationship(back_populates="purchase_orders")
     items: Mapped[list[PurchaseOrderItem]] = relationship(
         back_populates="purchase_order",
         cascade="all, delete-orphan",

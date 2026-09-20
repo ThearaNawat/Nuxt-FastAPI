@@ -17,6 +17,7 @@ def get_all_purchase_orders(session: Session) -> list[PurchaseOrder]:
             .options(
                 selectinload(PurchaseOrder.supplier),
                 selectinload(PurchaseOrder.items).selectinload(PurchaseOrderItem.product),
+                selectinload(PurchaseOrder.currency)
             )
             .order_by(PurchaseOrder.id.desc())
         )
@@ -81,7 +82,8 @@ def create_purchase_order(
             sub_total=data.sub_total,
             discount_amount=data.discount_amount,
             tax_amount=data.tax_amount,
-            total_amount=data.total_amount
+            total_amount=data.total_amount,
+            currency_id = data.currency_id
         )
         audit_user_id = _current_user_id(session, current_user_id)
         if audit_user_id is not None:
@@ -102,7 +104,7 @@ def create_purchase_order(
                 quantity=item_payload.quantity,
                 unit_cost=item_payload.unit_cost,
                 total_cost=total_cost,
-                measurement_id = 1
+                measurement_id = item_payload.measurement_id
                 
             )
             session.add(purchase_item)
@@ -124,6 +126,7 @@ def update_purchase_order(
     session: Session,
     current_user_id: int | None = None,
 ):
+
     try:
         purchase_order = get_one_purchase_order(session, id)
         if not purchase_order:
@@ -140,6 +143,7 @@ def update_purchase_order(
         purchase_order.sub_total=data.sub_total
         purchase_order.discount_amount=data.discount_amount
         purchase_order.tax_amount=data.tax_amount
+        purchase_order.currency_id = data.currency_id
         purchase_order.total_amount=data.total_amount
         audit_user_id = _current_user_id(session, current_user_id)
         if audit_user_id is not None:
@@ -161,7 +165,7 @@ def update_purchase_order(
                     quantity=item_payload.quantity,
                     unit_cost=item_payload.unit_cost,
                     total_cost=total_cost,
-                    measurement_id = 1
+                    measurement_id = item_payload.measurement_id
                 )
                 session.add(purchase_item)
 

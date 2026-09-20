@@ -17,4 +17,5 @@ from .measurement import Measurement
 from .currency import Currency
 from .exchange_rate import ExchangeRate
 from .stock_transaction_detail import StockTransactionDetail
-
+from .income import Income
+from .expense import Expense

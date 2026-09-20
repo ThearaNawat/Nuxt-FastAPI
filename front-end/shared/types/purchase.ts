@@ -18,7 +18,7 @@ export type PurchaseOrderItem = {
   product_id: number | null
   quantity: number
   unit_cost: number
-  expire_date?: string | Date | null
+  measurement_id: number | 0
   total_cost?: number
   product?: PurchaseProduct | null
 }
@@ -33,6 +33,7 @@ export type PurchaseOrder = {
   received_date?: string | null
   status: string
   payment_status?: number | 1
+  currency_id: number | null
   notes?: string | null
   sub_total: number | 0
   discount_amount: number | 0

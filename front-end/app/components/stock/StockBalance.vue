@@ -617,9 +617,7 @@
 
       row.total_price = quantity * unitPrice * exchangeRate
     }
-    const formatCurrency = (value: number) => {
-      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
-    }
+   
     const getAllCurrency = async () => { 
       try{
         currencies.value = await currencyAction.getAllCurrency()

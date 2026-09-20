@@ -39,7 +39,6 @@ def delete_many_user(ids: list[int], session: Session = Depends(get_session)):
 @router.post('/login')
 @limiter.limit("10/5minutes")
 async def login_user(user: user_login,request: Request ,response: Response ,session: Session = Depends(get_session)):
-    print(f"Request from user { request}")
     return await login(user,request, response, session)
 
 @router.post("/logout")

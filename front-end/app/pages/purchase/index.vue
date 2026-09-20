@@ -12,9 +12,13 @@
       filter-display="menu"
       data-key="id"
       size="small"
+      resizable-columns
+      removable-sort
+      reorderable-columns
       striped-rows
       row-hover
       scrollable
+      style="max-width: 1320px"
       scroll-height="500px"
       @row-dblclick="openEditDialog"
     >
@@ -26,28 +30,28 @@
       </Toolbar>
 
       <template #header>
-        <div class="flex justify-between">
-          <IconField>
+        <div class="flex jflex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <IconField class="w-full md:max-w-md">
             <InputIcon><i class="pi pi-search" /></InputIcon>
-            <InputText v-model="filters['global'].value" placeholder="Search" />
+            <InputText v-model="filters['global'].value" class="w-full" :placeholder="t('search')" size="small" />
           </IconField>
           <Button icon="pi pi-filter-slash" variant="link" @click="clearFilter" />
         </div>
       </template>
 
       <Column selection-mode="multiple" header-style="width: 2rem" />
-      <Column header="Order Number" field="order_number" sortable />
-      <Column header="Supplier" field="supplier_id" sortable>
+      <Column :header="t('order_number')" field="order_number" sortable />
+      <Column :header="t('supplier')" field="supplier_id" sortable>
         <template #body="{ data }">
           {{ formatSupplierLabelById(data.supplier ?? data.supplier_id) }}
         </template>
       </Column>
-      <Column header="Status" field="status" sortable>
+      <Column :header="t('status')" field="status" sortable>
         <template #body="{ data }">
           <Tag :value="getStatusLabel(data.status)" :severity="getStatusSeverity(data.status)" />
         </template>
       </Column>
-      <Column header="Payment Status" field="payment_status" sortable>
+      <Column :header="t('payment_status')" field="payment_status" sortable>
         <template #body="{ data }">
           <Tag
             :value="getPaymentStatusLabel(data.payment_status)"
@@ -55,34 +59,53 @@
           />
         </template>
       </Column>
-      <Column header="Order Date" field="order_date" sortable>
+      <Column :header="t('tax')" field="tax_amount" sortable>
+      
+      </Column>
+      <Column :header="t('discount')" field="discount_amount" sortable>
+      
+      </Column>
+      <Column :header="t('sub_total')" field="sub_total" sortable>
+      
+      </Column>
+      <Column :header="t('total_amount')" field="total_amount" sortable>
+        
+      </Column>
+      <Column :header="t('currency')" field="currency_id" sortable>
+        <template #body="{ data }">
+          {{ data.currency.code }}
+        </template>
+      </Column>
+      <Column :header="t('order_date')" field="order_date" sortable>
         <template #body="{ data }">
           {{ formatDate(data.order_date) }}
         </template>
       </Column>
-      <Column header="Required Date" field="required_date" sortable>
+      <Column :header="t('required_date')" field="required_date" sortable>
         <template #body="{ data }">
           {{ formatDate(data.required_date) }}
         </template>
       </Column>
-      <Column header="Received Date" field="received_date" sortable>
+      <Column :header="t('received_date')" field="received_date" sortable>
         <template #body="{ data }">
           {{ formatDate(data.received_date) }}
         </template>
       </Column>
-      <Column header="Actions" body-class="text-center" :style="{ width: '90px' }">
+      <Column :header="t('action')" body-class="text-center" :style="{ width: '90px' }">
         <template #body="{ data }">
           <div class="flex items-center justify-center gap-1">
             <Button icon="pi pi-eye" text size="small" @click="openViewDialog({ data })" />
-            <Button icon="pi pi-pencil" text size="small" @click="openEditDialog({ data })" />
-            <Button icon="pi pi-trash" text size="small" severity="danger" @click="deleteOne(data)" />
           </div>
         </template>
       </Column>
-      <template #empty>No purchase orders found.</template>
+      <template #empty>{{ t('empty') }}</template>
     </DataTable>
 
-    <Dialog :visible="openDialog" :closable="false" style="width: 90vw; max-width: 1000px">
+    <Dialog 
+      v-model:visible="openDialog" 
+      :closable="true" 
+      maximizable
+    >
       <template #header>
         <span class="text-xl">
           {{ viewMode ? `${t('purchase')} Details` : editMode ? t('lblHeaderUpdate').replace('[0]', t('purchase')) : t('lblHeaderCreate').replace('[0]', t('purchase')) }}
@@ -234,9 +257,10 @@
               <InputGroupAddon><Button icon="pi pi-credit-card" variant="link" /></InputGroupAddon>
               <FloatLabel variant="on">
                 <Select
-                  :options="[]"
-                  option-label="label"
-                  option-value="value"
+                  v-model="purchaseForm.currency_id"
+                  :options="currencies"
+                  option-label="code"
+                  option-value="id"
                 />
                 <label>{{ t('currentcy') }}</label>
               </FloatLabel>
@@ -250,98 +274,165 @@
               <label>{{ t('notes') }}</label>
             </FloatLabel>
           </InputGroup>
-
-          <div class="mt-4">
-            <div class="flex items-center justify-between mb-2">
-              <span class="font-semibold">{{ t('purchase_items') }}</span>
-              <Button icon="pi pi-plus" size="small" :label="t('add_item')" @click="addPurchaseItem" />
-            </div>
-
-            <div class="overflow-auto border rounded-md max-h-[250px]">
-              <table class="min-w-full text-sm">
-                <thead class="bg-gray-100">
-                  <tr>
-                    <th class="p-2 text-left">Product</th>
-                    <th class="p-2 text-right">Qty</th>
-                    <th class="p-2 text-right">Unit Cost</th>
-                    <th class="p-2 text-right">Total</th>
-                    <th class="p-2 text-center">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="(item, index) in purchaseForm.items" :key="index">
-                    <td class="p-2 w-full">
-                      <Select
-                        v-model="item.product_id"
-                        :options="productOptions"
-                        option-label="name"
-                        option-value="id"
-                        filter
-                        :virtual-scroller-options="{ itemSize: 38, autoSize: true}"
-                        class="w-full"
-                        show-clear
-                      >
-                        <template #option="{ option }">
-                          <div class="flex items-center">
-                            <span class="font-medium mr-2">{{ option.code }}</span>
-                            <span class="text-xs text-slate-500">{{ option.name }}</span>
-                          </div>
+          <Divider>
+              <span class="text-xs font-semibold uppercase text-slate-500">
+              {{ `${t('currentQuantity')} ${t('product')}` }}
+              </span>
+          </Divider>
+          <Button
+            :label="t('btnCreate') + ' ' + t('product')"
+            icon="pi pi-plus"
+            class="mb-1"
+            size="small"
+            @click="addNewRowProduct"
+          />
+          <DataTable 
+                :value="purchaseForm.items" 
+                editMode="cell" 
+                show-gridlines
+                show-headers
+                rezizable-columns
+                scroll-height="300px"
+                column-resize-mode="fit"
+                size="small"
+                striped-rows
+                scrollable
+                @cell-edit-complete="onCellEditComplete"
+                :pt="{
+                  table: { style: 'min-width: 50rem' },
+                  column: {
+                    bodycell: ({ state }: { state: any }) => ({
+                      class: [{ '!py-0': state['d_editing'] }]
+                    })
+                  }
+                }"
+              >
+                  <Column 
+                    v-for="col of columns" 
+                    :key="col.field" 
+                    :field="col.field" 
+                    :header="col.header" 
+                    style="width: 15%"
+                  >
+                      <template #body="{ data, field }">
+                        <!-- Product -->
+                        <template v-if="field === 'product_id'">
+                            {{ getProductName(data.product_id) }}
                         </template>
-                      </Select>
-                    </td>
-                    <td class="p-2">
-                      <InputNumber
-                        v-model="item.quantity"
-                        :min="1"
-                        class="w-full"
-                        @change="updatePurchaseItemTotal(item)"
-                      />
-                    </td>
-                    <td class="p-2">
-                      <InputNumber
-                        v-model="item.unit_cost"
-                        :min="0"
-                        mode="decimal"
-                        :show-buttons="false"
-                        class="w-full"
-                        @change="updatePurchaseItemTotal(item)"
-                      />
-                    </td>
-                    
-                    <td class="p-2 text-right">{{ getPurchaseItemTotal(item).toFixed(2) }}</td>
-                    <td class="p-2 text-center">
-                      <Button icon="pi pi-trash" severity="danger" text size="small" @click="removePurchaseItem(index)" />
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+                       
+                        <!-- Measurement -->
+                        <template v-else-if="field === 'measurement_id'">
+                            {{ getMeasurementName(data.measurement_id) }}
+                        </template>
 
-            <Message v-if="errors.items" severity="error" size="small" class="mt-2">{{ errors.items }}</Message>
-            <div class="flex flex-col gap-2 justify-end mt-2 sm:flex-row sm:items-center">
-              <div class="text-sm text-slate-600">Line totals update automatically when qty or cost changes.</div>
-              <div class="ml-auto font-semibold">Total Purchase: {{ getPurchaseOrderTotal().toFixed(2) }}</div>
-            </div>
-          </div>
+                        <template v-else-if="field === 'unit_cost'">
+                          <span class="float-right"> {{ data.unit_cost }} </span>
+                        </template>
+
+                        <template v-else-if="field === 'total_cost'">
+                            <span class="float-right">{{ data.total_cost }}</span>
+                        </template>
+
+                        <template v-else>
+                            {{ data[field as string]  }}
+                        </template>
+                      </template>
+                      <template #editor="{ data, field }">
+                          <!-- PRODUCT -->
+                        <Select
+                            v-if="field === 'product_id'"
+                            v-model="data.product_id"
+                            :options="productOptions"
+                            optionLabel="name"
+                            optionValue="id"
+                            :placeholder="t('select').replace('{0}',t('product'))"
+                            show-clear
+                            size="small"
+                            filter
+                            fluid
+                            :highlight-on-select="true"
+                            :virtual-scroller-options="{ itemSize: 38, }"
+                        />
+
+                        <!-- QUANTITY -->
+                        <InputNumber
+                            v-else-if="field === 'quantity'"
+                            v-model="data.quantity"
+                            :min="0"
+                            autofocus
+                            size="small"
+                            fluid
+                            
+                        />
+                        <!-- MEASUREMENT @update:modelValue="calculateTotal(data)" -->
+                        <Select
+                            v-else-if="field === 'measurement_id'"
+                            v-model="data.measurement_id"
+                            :options="measurementOptions"
+                            optionLabel="code"
+                            optionValue="id"
+                            size="small"
+                            :placeholder="t('select').replace('{0}',t('measurement'))"
+                            fluid
+                        />
+
+                        <!-- UNIT PRICE -->
+                        <InputNumber
+                            v-else-if="field === 'unit_cost'"
+                            v-model="data.unit_cost"
+                            :min="0"
+                            autofocus
+                            size="small"
+                        />
+                        
+                      </template>
+                  </Column>
+                  <Column :header="t('currency')">
+                    <template #body="{  }">
+                      {{ getCurrencyName(purchaseForm.currency_id) }}
+                    </template>
+                  </Column>
+                  <Column :header="t('action')">
+                    <template #body="{ index }">
+                      <Button
+                        icon="pi pi-trash"
+                        severity="danger"
+                        variant="text"
+                        size="small"
+                        @click="removeRowProductDetail(index)"
+                      />
+                    </template>
+                </Column>
+              </DataTable>
         </div>
       </template>
       <template #footer>
-        <Button
-          v-if="!viewMode"
-          icon="pi pi-check"
-          :loading="btnLoading"
-          size="small"
-          :label="t('btnSave')"
-          @click="editMode ? update() : create()"
-        />
-        <Button icon="pi pi-times" :label="t('btnCancel')" size="small" @click="close" />
+        <div class="w-full">
+          <Divider class="w-full"></Divider>
+          <div class="text-end">
+            <Button
+              v-if="!viewMode"
+              icon="pi pi-check"
+              :loading="btnLoading"
+              size="small"
+              :label="t('btnSave')"
+              @click="editMode ? update() : create()"
+              class="mr-2"
+            />
+            <Button 
+              icon="pi pi-times" 
+              :label="t('btnCancel')" 
+              size="small" 
+              @click="close"
+            />
+          </div>
+        </div>
       </template>
     </Dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
 import {
   applyPurchaseValidationErrors,
   createEmptyPurchaseForm,
@@ -355,7 +446,8 @@ import {
 import { usePurchase } from '~/composables/usePurchase'
 import { formatDate, parseDate } from '~/utils/dateFormat'
 import type { PurchaseOrder, PurchaseProduct, PurchaseSupplier } from '~~/shared/types/purchase'
-
+import type { Currency } from '~~/shared/types/currency'
+import type { Measurement } from '~~/shared/types/measurement'
 definePageMeta({ layout: 'dashboard' })
 
 type PurchaseOrderItemState = PurchaseItemForm & {
@@ -381,21 +473,34 @@ type ValidationErrorResponse = {
 
 const { t } = useI18n()
 const purchaseAction = usePurchase()
+const currencyAction = useCurrency()
+const productAction = useProduct()
+const measurementAction = useMeasurement()
 const { confirmDelete } = useConfirmDelete()
 const messageBox = MessageBox()
 const supplierOptions = ref<PurchaseSupplier[]>([])
 const productOptions = ref<PurchaseProduct[]>([])
 const purchaseList = ref<PurchaseOrder[]>([])
+const currencies = ref<Currency[]>([])
 const loading = ref(false)
 const btnLoading = ref(false)
 const openDialog = ref(false)
 const editMode = ref(false)
 const viewMode = ref(false)
 const filters = ref(createPurchaseFilters())
+const warningMessage = () => messageBox.warning(t('warningMessage'))
+const errorMessage = () => messageBox.error(t('errorMessage'))
 const selectPurchases = ref<PurchaseOrder[]>([])
 const errors = ref<PurchaseErrors>(createPurchaseErrors())
 const purchaseForm = ref<PurchaseFormState>(createEmptyPurchaseForm() as PurchaseFormState)
-
+const measurementOptions = ref<Measurement[]>([])
+const columns = ref([
+        { field: 'product_id', header: t('product') },
+        { field: 'quantity', header: t('quantity') },
+        { field: 'measurement_id', header: t('measurement')},
+        { field: 'unit_cost', header: t('unit_price') },
+        { field: 'total_cost', header: t('total') },
+    ]);
 const statusOptions = computed(() => [
   { label: t('pending'), value: 'pending' },
   { label: t('confirmed'), value: 'confirmed' },
@@ -403,6 +508,94 @@ const statusOptions = computed(() => [
   { label: t('delivered'), value: 'delivered' },
   { label: t('cancelled'), value: 'cancelled' },
 ])
+
+const removeRowProductDetail = (index: number) => {
+      purchaseForm.value.items.splice(index, 1)
+    }
+const getAllMeasurement = async () => {
+  try{
+    measurementOptions.value = await measurementAction.getAll()
+  }catch(e){
+    errorMessage()
+  }finally{
+
+  }
+}
+
+const addNewRowProduct = () => {
+        purchaseForm.value.items.push({
+            product_id: null,
+            quantity: 0,
+            total_cost: 0,
+            unit_cost: 0,
+            measurement_id: 0
+        })
+    }
+
+const onCellEditComplete = (event: any) => {
+      const { data, newValue, field } = event 
+      if (field === 'total_cost') {
+          return
+      }
+      data[field] = newValue
+      if (
+          field === 'quantity' ||
+          field === 'unit_cost' 
+      ) {
+        calculateTotal(data)
+      }
+    }
+
+const calculateTotal = (row: any) => {
+      const quantity = Number(row.quantity) || 0
+      const unitPrice = Number(row.unit_cost) || 0
+
+      row.total_cost = quantity * unitPrice 
+    }
+
+const getCurrencyName = (id: number | null) => {
+    const currency = currencies.value.find(
+        item => item.id === id
+    )
+
+      return currency?.code ?? ''
+    }
+
+const getMeasurementName = (id: number | null) => {
+    const measurement = measurementOptions.value.find(
+        item => item.id === id
+    )
+
+      return measurement?.code ?? ''
+    }
+
+const getAllCurrency = async () => { 
+  try{
+    currencies.value = await currencyAction.getAllCurrency()
+  }catch(error){
+    errorMessage()
+  }finally{
+
+  }
+}
+
+const getAllProduct = async () => {
+  try{
+    productOptions.value = await productAction.getAllProduct()
+  }catch(e){
+    errorMessage()
+  }finally{
+
+  }
+}
+
+const getProductName = (id: number | null) => {
+  const product = productOptions.value.find(
+      item => item.id === id
+  )
+  const productName = product?.name 
+  return productName ?? ''
+}
 
 const paymentStatusOptions = computed(() => [
   { label: t('pending'), value: 1 },
@@ -414,6 +607,7 @@ const paymentStatusOptions = computed(() => [
 const clearFilter = () => {
   filters.value = createPurchaseFilters()
   selectPurchases.value = []
+  getPurchaseList()
 }
 
 const fetchSupplierOptions = async () => {
@@ -524,9 +718,7 @@ const getPurchaseItemTotal = (item: PurchaseItemForm | PurchaseOrderItemState) =
   return Number((quantity * unitCost).toFixed(2))
 }
 
-const updatePurchaseItemTotal = (item: PurchaseOrderItemState) => {
-  item.total_cost = getPurchaseItemTotal(item)
-}
+
 
 const normalizePurchaseItems = (items: PurchaseOrder['items']) => {
   if (!Array.isArray(items) || !items.length) {
@@ -541,10 +733,10 @@ const normalizePurchaseItems = (items: PurchaseOrder['items']) => {
       product_id: lineItem.product_id ?? null,
       quantity,
       unit_cost: unitCost,
-      expire_date: lineItem.expire_date ? parseDate(lineItem.expire_date) : null,
       total_cost:
         lineItem.total_cost != null ? Number(lineItem.total_cost) : Number((quantity * unitCost).toFixed(2)),
       product: lineItem.product ?? null,
+      measurement_id: lineItem.measurement_id
     }
   }) as PurchaseOrderItemState[]
 }
@@ -564,7 +756,8 @@ const normalizePurchaseForm = (item: PurchaseOrder): PurchaseFormState => ({
   sub_total: item.sub_total,
   discount_amount: item.discount_amount,
   tax_amount: item.tax_amount,
-  total_amount: item.total_amount
+  total_amount: item.total_amount,
+  currency_id: item.currency_id
 })
 
 const validatePurchaseForm = () => {
@@ -601,6 +794,7 @@ const openCreateDialog = async () => {
 }
 
 const openEditDialog = (event: PurchaseRowEvent) => {
+  console.log(event)
   editMode.value = true
   viewMode.value = false
   errors.value = createPurchaseErrors()
@@ -625,20 +819,6 @@ const close = () => {
   purchaseForm.value = createEmptyPurchaseForm() as PurchaseFormState
 }
 
-const addPurchaseItem = () => {
-  purchaseForm.value.items.push(createEmptyPurchaseItem() as PurchaseOrderItemState)
-}
-
-const removePurchaseItem = (index: number) => {
-  if (purchaseForm.value.items.length > 1) {
-    purchaseForm.value.items.splice(index, 1)
-  }
-}
-
-const getPurchaseOrderTotal = () =>
-  purchaseForm.value.items.reduce((sum, item) => sum + getPurchaseItemTotal(item), 0)
-
-
 
 const formatDateValue = (value: string | Date | null) => {
   if (!value) return null
@@ -654,6 +834,7 @@ const makePurchasePayload = (form: PurchaseFormState) => ({
   received_date: formatDateValue(form.received_date),
   status: form.status,
   payment_status: form.payment_status,
+  currency_id: form.currency_id,
   notes: form.notes,
   supplier: form.supplier ?? null,
   sub_total: form.sub_total,
@@ -664,8 +845,8 @@ const makePurchasePayload = (form: PurchaseFormState) => ({
     product_id: item.product_id,
     quantity: item.quantity,
     unit_cost: item.unit_cost,
-    expire_date: formatDateValue(item.expire_date),
     total_cost: item.total_cost ?? getPurchaseItemTotal(item),
+    measurement_id: item.measurement_id
   })),
 })
 
@@ -679,6 +860,7 @@ const create = async () => {
   const nextErrors = validatePurchaseForm()
   if (nextErrors.supplier_id || nextErrors.items) {
     errors.value = nextErrors
+    warningMessage()
     btnLoading.value = false
     return
   }
@@ -703,6 +885,7 @@ const update = async () => {
   const nextErrors = validatePurchaseForm()
   if (nextErrors.supplier_id || nextErrors.items) {
     errors.value = nextErrors
+    warningMessage()
     btnLoading.value = false
     return
   }
@@ -756,6 +939,15 @@ const deleteOne = (purchaseOrder: PurchaseOrder) => {
 }
 
 onMounted(async () => {
-  await Promise.all([fetchSupplierOptions(), fetchProductOptions(), getPurchaseList(), loadNextOrderNumber()])
+  await Promise.all(
+    [
+      fetchSupplierOptions(), 
+      fetchProductOptions(), 
+      getPurchaseList(), 
+      loadNextOrderNumber(), 
+      getAllCurrency(), 
+      getAllProduct(),
+      getAllMeasurement()
+    ])
 })
 </script>

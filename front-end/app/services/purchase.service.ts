@@ -4,8 +4,8 @@ export type PurchaseItemForm = {
   product_id: number | null
   quantity: number
   unit_cost: number
-  expire_date: Date | null
   total_cost: number
+  measurement_id: number
 }
 
 export type PurchaseForm = {
@@ -20,6 +20,7 @@ export type PurchaseForm = {
   notes: string
   sub_total: number
   discount_amount: number
+  currency_id: number | null
   tax_amount: number
   total_amount: number
   items: PurchaseItemForm[]
@@ -41,8 +42,8 @@ export const createEmptyPurchaseItem = (): PurchaseItemForm => ({
   product_id: null,
   quantity: 1,
   unit_cost: 0,
-  expire_date: null,
   total_cost: 0,
+  measurement_id: 0
 })
 
 export const createEmptyPurchaseForm = (): PurchaseForm => ({
@@ -54,6 +55,7 @@ export const createEmptyPurchaseForm = (): PurchaseForm => ({
   status: 'pending',
   payment_status: 1,
   notes: '',
+  currency_id: null,
   sub_total: 0,
   discount_amount: 0,
   tax_amount: 0,
