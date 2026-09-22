@@ -54,7 +54,7 @@ jobs:
   
   frontend:
     name: Frontend
-    run-on: ubuntu-latest
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
