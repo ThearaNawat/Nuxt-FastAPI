@@ -1,3 +1,15 @@
 .env
 .env.*
 !.env.example
+
+venv/
+.venv/
+env/
+.env/
+ENV/
+
+.pytest_cache/
+.coverage
+htmlcov/
+.nox/
+.tox/
