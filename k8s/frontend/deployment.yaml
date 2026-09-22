@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 
 metadata:
-  name: frontend
+  name: frontend-deployment
   namespace: erp
 
 spec:
@@ -25,7 +25,7 @@ spec:
 
         - name: frontend
 
-          image: AWS_ACCOUNT_ID.dkr.ecr.ap-southeast-1.amazonaws.com/erp-frontend:latest
+          image: kongtheara/erp-frontend:latest
 
           ports:
             - containerPort: 3000
