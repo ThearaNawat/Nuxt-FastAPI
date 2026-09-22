@@ -7,7 +7,7 @@ venv/
 env/
 .env/
 ENV/
-
+__pycache__/
 .pytest_cache/
 .coverage
 htmlcov/
