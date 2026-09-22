@@ -368,8 +368,6 @@ import type { Measurement } from '~~/shared/types/measurement'
 import type { StockItem } from '~/composables/useStock'
 import type { product } from '~/composables/useProduct'
 import type { Warehouse } from '~~/shared/types/warehouse'
-import StockIn from '~/components/stock/StockIn.vue'
-import StockOut from '~/components/stock/StockOut.vue'
 import StockBalance from '~/components/stock/StockBalance.vue'
 import {
   applyStockValidationErrors,
@@ -383,19 +381,7 @@ import { formatDate } from '~/utils/dateFormat'
 
 definePageMeta({ layout: 'dashboard' })
 
-type ProductLookup = {
-  id: number
-  code: string
-  name: string
-  package?: string | null
-  measurement_id?: number | null
-  measurement_code?: string | null
-}
 
-type WarehouseLookup = {
-  id: number
-  warehouse_name: string
-}
 
 type DataTablePageEvent = {
   page: number

@@ -1,7 +1,6 @@
 <template>
     <div id="stock-out">
         <DataTable
-            v-model:filters="filters"
             v-model:selection="selection"
             paginator
             :rows="pagination.limit"
@@ -9,7 +8,6 @@
             :rows-per-page-options="[5, 10, 20, 50, 100]"
             :value="data"
             :loading="loading"
-            :global-filter-fields="globalFilterField"
             filter-display="menu"
             removable-sort
             reorderable-columns
@@ -39,7 +37,7 @@
                     <InputIcon>
                     <i class="pi pi-search" />
                     </InputIcon>
-                    <InputText size="small" v-model="filters['global'].value" class="w-full" :placeholder="t('search')" />
+                    <InputText size="small"  class="w-full" :placeholder="t('search')" />
                 </IconField>
                 <Button icon="pi pi-filter-slash" variant="link" @click="clearFilter" />
                 </div>
@@ -157,8 +155,6 @@
         loading: boolean
         openDialog: boolean
         editMode: boolean
-        filters: any
-        globalFilterField: any
         data: []
         selection: any
         pagination: { page: 1, limit: 10, total: 0}
