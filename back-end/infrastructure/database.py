@@ -8,7 +8,7 @@ import model
 from model.base_model import Base, BaseModel
 
 engine = create_engine(
-    settings.DATABASE_URL,
+    settings.database_url,
     echo=settings.DEBUG,
     pool_pre_ping=True,
 )

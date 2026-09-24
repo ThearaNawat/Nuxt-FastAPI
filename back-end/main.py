@@ -1,7 +1,7 @@
 
 from fastapi import FastAPI, status, Depends
 from fastapi.responses import JSONResponse
-from infrastructure.database import create_db_and_table, drop_db_and_table
+from infrastructure.database import create_db_and_table
 from routers import user as user_router, category, supplier, product, menu_item_router, role_router, stock, stock_transaction, sales_order, customer, warehouse, purchase_order, purchase_order_item, measurement_router, currency, income, expense
 from routers import invoice as invoice_router
 from core.middleware import auth_middleware
@@ -19,7 +19,6 @@ from infrastructure.redis import init_redis, close_redis
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # drop_db_and_table()
     create_db_and_table()
     redis_client = await init_redis()
     app.state.redis = redis_client
