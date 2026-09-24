@@ -13,4 +13,5 @@ data:
   POSTGRES_PORT: "5432"
   POSTGRES_DB: "erp_db"
   REDIS_URL: "redis://redis-service:6379/0"
+  DATABASE_URL: "postgresql+psycopg://postgres:123456@postgres-service:5432/erp_db"
   
