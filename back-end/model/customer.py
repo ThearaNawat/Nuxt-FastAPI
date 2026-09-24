@@ -35,7 +35,8 @@ class Customer(BaseModel):
     payment_terms: Mapped[Optional[str]] = mapped_column(
         String(100), nullable=True
     )
-    # status: Mapped[bool] = mapped_column(bool, nullable=False, default=True)
+    incomes: Mapped[list[Income]] = relationship(back_populates="customer")
 
     sales_orders: Mapped[list[SalesOrder]] = relationship(back_populates="customer")
     invoices: Mapped[list[Invoice]] = relationship(back_populates="customer")
+    

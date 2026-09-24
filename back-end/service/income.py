@@ -8,7 +8,8 @@ from schema.income import IncomePayload
 
 def list_income(session: Session) -> list[Income]:
     return session.execute(
-        select(Income).order_by(Income.transaction_date.desc(), Income.id.desc())
+        select(Income)
+        .order_by(Income.transaction_date.desc(), Income.id.desc())
     ).scalars().all()
 
 

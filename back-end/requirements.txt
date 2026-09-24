@@ -74,3 +74,4 @@ wrapt>=2.0.1
 yarl>=1.22.0
 redis>=4.6.0
 pytest
+slowapi

@@ -25,3 +25,5 @@ class Supplier(BaseModel):
         back_populates="supplier",
         cascade="all, delete-orphan",
     )
+
+    expenses: Mapped[list["Expense"]] = relationship(back_populates="supplier")

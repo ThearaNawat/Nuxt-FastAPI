@@ -36,3 +36,6 @@ class Currency(BaseModel):
         foreign_keys="ExchangeRate.to_currency_id",
         back_populates="to_currency"
     )
+    expenses: Mapped[list["Expense"]] = relationship("Expense", foreign_keys="Expense.currency_id", back_populates="currency")
+
+    incomes: Mapped[list["Income"]] = relationship("Income", foreign_keys="Income.currency_id", back_populates="currency")

@@ -25,7 +25,7 @@ spec:
 
         - name: frontend
 
-          image: kongtheara/erp-frontend:latest
+          image: kongtheara/frontend:latest
 
           ports:
             - containerPort: 3000

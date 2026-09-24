@@ -19,3 +19,10 @@ from .exchange_rate import ExchangeRate
 from .stock_transaction_detail import StockTransactionDetail
 from .income import Income
 from .expense import Expense
+from .income_detail import IncomeDetail
+from .expense_detail import ExpenseDetail  
+from .journal_entry import JournalEntry
+from .journal_entry_line import JournalEntryLine
+from .account import Account
+from .expense_category import ExpenseCategory
+from .income_category import IncomeCategory

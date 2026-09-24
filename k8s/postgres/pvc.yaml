@@ -3,7 +3,7 @@ kind: PersistentVolumeClaim
 
 metadata:
   name: postgres-pvc
-  namespace: erp-dev
+  namespace: erp
 
 spec:
   accessModes:
