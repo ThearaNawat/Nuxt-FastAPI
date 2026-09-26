@@ -29,7 +29,11 @@ spec:
           imagePullPolicy: Always
           ports:
             - containerPort: 3000
-
+          env:
+            - name: NUXT_API_BASE_INTERNAL
+              value: "http://backend-service:8000"
+            - name: BASE_URL
+              value: "http://127.0.0.1:8000"
           resources:
             requests:
               cpu: "250m"

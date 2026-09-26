@@ -59,6 +59,10 @@ export default defineNuxtConfig({
     
   ],
   runtimeConfig:{
-    URL_API: import.meta.env.BASE_URL
+    URL_API_INTERNAL: import.meta.env.NUXT_API_BASE_INTERNAL || 'http://backend-service:8000',
+   
+    public: {
+      URL_API: import.meta.env.BASE_URL || 'http://127.0.0.1:8000'
+    }
   }
 })
