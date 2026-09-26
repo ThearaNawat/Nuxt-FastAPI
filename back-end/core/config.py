@@ -26,7 +26,7 @@ class Setting(BaseSettings):
     
     DATABASE_URL: str = os.getenv(
         "DATABASE_URL",
-        database_url,
+        "postgresql://postgres:123456@localhost:5432/erp_db",
     )
 
     # Redis

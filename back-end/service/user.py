@@ -9,6 +9,7 @@ import time
 from datetime import datetime, timedelta, timezone
 from core.config import settings
 from jose import jwt
+from model.role import Role
 from service.menu_item_service import MenuItemService 
 password_context = CryptContext(schemes=['bcrypt'], deprecated="auto")
 SECRET_KEY = settings.SECRET_KEY
@@ -32,23 +33,28 @@ def _current_user_id(session: Session, current_user_id: int | None = None) -> in
     return session.info.get("current_user_id")
 
 
-def create(data: user_create, session: Session, current_user_id: int | None = None):
+def create(data: user_create, session: Session, current_role_id: int | None = None):
     try:
         exist_user = session.execute(select(User).where(User.email == data.email)).scalars().first()
         if exist_user: 
             raise HTTPException(status_code=400, detail="Username or email already exists")
+
+        role = session.execute(select(Role).select(Role.id)).first()
+        print(f"Role id {role}")
+        roleId = None
+        if current_role_id is None and role:
+            roleId = role
+
+        roleId = data.role_id
         
         user = User(
             username = data.username,
             email = data.email,
             password = hash_password(data.password),
             status= data.status,
-            role_id = data.role_id
+            role_id = roleId
         )
-        audit_user_id = _current_user_id(session, current_user_id)
-        if audit_user_id is not None:
-            user.created_by = audit_user_id
-            user.updated_by = audit_user_id
+        
         
         session.add(user)
         session.commit()

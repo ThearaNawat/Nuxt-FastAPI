@@ -16,8 +16,8 @@ def get_one_user(id: int, session: Session = Depends(get_session)):
     return get_one(id, session)
 
 @router.post('/create')
-def create_user(data: user_create, session: Session = Depends(get_session)):
-    return create(data, session)
+def create_user(data: user_create, session: Session = Depends(get_session), current_user: User = Depends(get_current_user)):
+    return create(data, session, current_user.role_id)
 
 @router.post('/update/{id}', dependencies=[Depends(require_menu('/update'))])
 def update_user(
