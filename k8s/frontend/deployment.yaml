@@ -32,7 +32,7 @@ spec:
           env:
             - name: NUXT_API_BASE_INTERNAL
               value: "http://backend-service:8000"
-            - name: BASE_URL
+            - name: NUXT_PUBLIC_URL_API
               value: "http://127.0.0.1:8000"
           resources:
             requests:
