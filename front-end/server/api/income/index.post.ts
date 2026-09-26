@@ -2,8 +2,8 @@ export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig()
   const token = getCookie(event, 'ACCESS_TOKEN')
   const body = await readBody(event)
-
-  return await $fetch(`${config.URL_API}/income/create`, {
+  const baseURL = config.URL_API_INTERNAL || config.public.URL_API
+  return await $fetch(`${baseURL}/income/create`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}` },
     body,

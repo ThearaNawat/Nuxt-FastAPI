@@ -3,7 +3,8 @@ export default defineEventHandler(async (event) => {
     const token = getCookie(event, 'ACCESS_TOKEN')
     const body = await readBody(event)
     const { id } = getRouterParams(event)
-    return await $fetch(`${config.URL_API}/warehouse/delete/${id}`, {
+    const baseURL = config.URL_API_INTERNAL || config.public.URL_API
+    return await $fetch(`${baseURL}/warehouse/delete/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
         body: body

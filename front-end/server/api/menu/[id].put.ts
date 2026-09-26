@@ -3,6 +3,6 @@ export default defineEventHandler(async (event) => {
     const config = useRuntimeConfig()
     const body = await readBody(event)
     const { id } = getRouterParams(event)
-
-    return await $fetch(`${config.URL_API}/menu/update/${id}`, { method: 'PUT', headers: { Authorization: `Bearer ${token}`}, body})
+    const baseURL = config.URL_API_INTERNAL || config.public.URL_API
+    return await $fetch(`${baseURL}/menu/update/${id}`, { method: 'PUT', headers: { Authorization: `Bearer ${token}`}, body})
 })

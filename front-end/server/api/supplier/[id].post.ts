@@ -3,6 +3,6 @@ export default eventHandler(async (event) =>{
     const token = getCookie(event, 'ACCESS_TOKEN')
     const body = await readBody(event)
     const { id } = getRouterParams(event)
-
-    return await $fetch(`${config.URL_API}/supplier/update/${id}`, { method: 'POST', headers: { Authorization: `Bearer ${token}`}, body})
+    const baseURL = config.URL_API_INTERNAL || config.public.URL_API
+    return await $fetch(`${baseURL}/supplier/update/${id}`, { method: 'POST', headers: { Authorization: `Bearer ${token}`}, body})
 })

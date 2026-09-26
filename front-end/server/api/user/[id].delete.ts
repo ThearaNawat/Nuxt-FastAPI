@@ -2,5 +2,6 @@ export default defineEventHandler(async (event) => {
     const config = useRuntimeConfig()
     const cookie = getHeader(event, 'cookie')
     const { id } = getRouterParams(event)
-    return await $fetch(`${config.URL_API}/user/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${cookie}` }})
+    const baseURL = config.URL_API_INTERNAL || config.public.URL_API
+    return await $fetch(`${baseURL}/user/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${cookie}` }})
 })
