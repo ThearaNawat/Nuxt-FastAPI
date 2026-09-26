@@ -3,7 +3,7 @@ import type { category } from "~/composables/useCategory";
 export const useProduct = ()=>{
     const nuxtApp = useNuxtApp()
     const axios = nuxtApp.$axios as any
-    const category = async () => await $fetch<category[]>(`/api/category`);
+    const category = async () => await $fetch<category[]>("/api/category");
     const getAllProduct = async () => (await axios.get('/product')).data as product[];
     const create = async (payload: FormData) => (await axios.post('/product/create', payload)).data
     const update = async (id: number, payload: FormData) => (await axios.post(`/product/update/${id}`, payload)).data
