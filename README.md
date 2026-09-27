@@ -1,5 +1,6 @@
 # Full-Stack ERP Application (FastAPI + Nuxt 4)
 The project make by myself for learning and simple code
+This repository is an academic/practice project created for learning
 You guys can run the project follow command below:
 
 This project is a full-stack Enterprise Resource Planning (ERP) application featuring a FastAPI backend, Nuxt 4 frontend, PostgreSQL database, and Redis cache. It is designed to run seamlessly on Docker Desktop with Kubernetes enabled.
