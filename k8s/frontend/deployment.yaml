@@ -7,7 +7,7 @@ metadata:
 
 spec:
 
-  replicas: 2
+  replicas: 1
 
   selector:
     matchLabels:
@@ -30,7 +30,7 @@ spec:
           ports:
             - containerPort: 3000
           env:
-            - name: NUXT_API_BASE_INTERNAL
+            - name: NUXT_URL_API_INTERNAL
               value: "http://backend-service:8000"
             - name: NUXT_PUBLIC_URL_API
               value: "http://127.0.0.1:8000"

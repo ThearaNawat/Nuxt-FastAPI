@@ -196,8 +196,6 @@
 
 <script setup lang="ts">
 import type { AxiosInstance } from 'axios'
-// import { computed, defineComponent, h, onMounted, ref } from 'vue'
-
 definePageMeta({ layout: 'dashboard' })
 
 type OrderStatus = 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled' | string

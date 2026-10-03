@@ -23,23 +23,23 @@ kubectl CLI tool installed.
 
 Node.js (v22 or higher) and Python (v3.12).
 
-1. Create Namespace
+# 1. Create Namespace
 kubectl apply -f k8s/namespace.yaml
 
-2. Deploy Infrastructure Services (Database & Redis)
+# 2. Deploy Infrastructure Services (Database & Redis)
 kubectl apply -f k8s/postgres/ -n erp
 kubectl apply -f k8s/redis/ -n erp
 
-3. Deploy Application Services (Backend & Frontend)
+# 3. Deploy Application Services (Backend & Frontend)
 kubectl apply -f k8s/backend/ -n erp
 kubectl apply -f k8s/frontend/ -n erp
 
-4. Apply Ingress (Optional)
+# 4. Apply Ingress (Optional)
 If you are using an Ingress Controller (like NGINX Ingress Controller):
 
 kubectl apply -f k8s/ingress.yaml -n erp
 
-5. Verify Resources
+# 5. Verify Resources
 Check that all pods are running:
 
 kubectl get pods -n erp

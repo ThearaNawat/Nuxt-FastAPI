@@ -33,19 +33,19 @@ def _current_user_id(session: Session, current_user_id: int | None = None) -> in
     return session.info.get("current_user_id")
 
 
-def create(data: user_create, session: Session, current_role_id: int | None = None):
+def create(data: user_create, session: Session):
     try:
         exist_user = session.execute(select(User).where(User.email == data.email)).scalars().first()
         if exist_user: 
             raise HTTPException(status_code=400, detail="Username or email already exists")
 
-        role = session.execute(select(Role).select(Role.id)).first()
-        print(f"Role id {role}")
-        roleId = None
-        if current_role_id is None and role:
+        role = session.execute(select(Role.id).order_by(Role.id)).scalars().first()
+       
+        roleId = data.role_id
+        
+        if data.role_id is None and role is not None:
             roleId = role
 
-        roleId = data.role_id
         
         user = User(
             username = data.username,
@@ -61,7 +61,7 @@ def create(data: user_create, session: Session, current_role_id: int | None = No
         session.refresh(user)
         
         return { 'message': 'Success', 'data': user }
-    except HTTPException:
+    except HTTPException as e:
         session.rollback()
         raise
     except IntegrityError as e:

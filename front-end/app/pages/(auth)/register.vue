@@ -152,7 +152,7 @@ const form = reactive<user>({
   password: '',
   confirm_password: '',
   status: true,
-  role_id: 0
+  role_id: null
 })
 
 const errors = reactive({

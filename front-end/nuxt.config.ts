@@ -59,10 +59,10 @@ export default defineNuxtConfig({
     
   ],
   runtimeConfig:{
-    URL_API_INTERNAL: 'http://backend-service:8000',
+    URL_API_INTERNAL: '', //http://backend-service:8000
    
     public: {
-      URL_API: 'http://127.0.0.1:8000'
+      URL_API: ''
     }
   }
 })
